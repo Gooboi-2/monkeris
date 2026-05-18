@@ -725,3 +725,76 @@
 /datum/sprite_accessory/hair/aviator2
 	name = "Aviator 2"
 	icon_state = "aviator2"
+
+/datum/sprite_accessory/hair/spicy
+	name = "Spicy"
+	icon_state = "spicy"
+
+/datum/sprite_accessory/hair/shortbedhead
+	name = "Short Bedhead"
+	icon_state = "shortbedhead"
+
+/datum/sprite_accessory/hair/phoenixhalfshaven
+	name = "Phoenix Halfshaven"
+	icon_state = "phoenix_halfshaven"
+
+/datum/sprite_accessory/hair/phoenix
+	name = "Phoenix"
+	icon_state = "phoenix"
+
+/datum/sprite_accessory/hair/kobeni
+	name = "Kobeni"
+	icon_state = "kobeni"
+
+/datum/sprite_accessory/hair/kajam
+	name = "Kajam"
+	icon_state = "kajam"
+
+/datum/sprite_accessory/hair/hyenamane
+	name = "Hyena Mane"
+	icon_state = "hyenamane"
+
+/datum/sprite_accessory/hair/dave
+	name = "Dave"
+	icon_state = "dave"
+
+/datum/sprite_accessory/hair/halfshavedalt
+	name = "Halfshaved alt"
+	icon_state = "halfshaved_alt"
+
+/datum/sprite_accessory/hair/longundercut
+	name = "Long Undercut"
+	icon_state = "long_undercut"
+
+/datum/sprite_accessory/hair/beachwave
+	name = "Beach Wave 2"
+	icon_state = "beachwave2"
+
+/datum/sprite_accessory/hair/fortuneteller
+	name = "Fortune Teller"
+	icon_state = "fortuneteller"
+
+/datum/sprite_accessory/hair/halfshaven
+	name = "Half Shave"
+	icon_state = "halfshave"
+
+/datum/sprite_accessory/hair/manbun
+	name = "Man Bun 2"
+	icon_state = "manbun2"
+
+/datum/sprite_accessory/hair/mermaid
+	name = "Mermaid"
+	icon_state = "mermaid"
+
+/datum/sprite_accessory/hair/shrinepriestess
+	name = "Shrine Priestess"
+	icon_state = "shrine_priestess"
+
+/datum/sprite_accessory/hair/unkemptedcurls
+	name = "Unkempted Curls"
+	icon_state = "unkempted_curls"
+
+/datum/sprite_accessory/hair/alpaca
+	name = "Alpaca"
+	icon_state = "alpaca"
+

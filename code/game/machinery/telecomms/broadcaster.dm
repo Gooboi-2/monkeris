@@ -322,7 +322,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 		var/voice
 		var/voice_scrambled
 
-		if(config.tts_enabled && use_text_to_speech)
+		if(CONFIG_GET(flag/tts_enabled) && use_text_to_speech)
 			if(M)
 				if(M.tts_seed)
 					seed = M.tts_seed
@@ -335,10 +335,8 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 								seed = rig.speech.voice_holder.voice_tts
 						else
 							for(var/obj/item/gear in list(H.wear_mask, H.wear_suit, H.head))
-								if(!gear)
-									continue
 								var/obj/item/voice_changer/changer = locate() in gear
-								if(changer && changer.active && changer.voice_tts)
+								if(changer?.active && changer.voice_tts)
 									seed = changer.voice_tts
 				else if(M.gender == "male")
 					seed = TTS_SEED_DEFAULT_MALE
@@ -357,7 +355,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 		var/part_b_extra = ""
 		if(data == 3) // intercepted radio message
 			part_b_extra = " <i>(Intercepted)</i>"
-		var/part_a = "<span class='[frequency_span_class(display_freq)]'>\icon[radio]<b>\[[freq_text]\][part_b_extra]</b> <span class='name'>" // goes in the actual output
+		var/part_a = "<span class='[frequency_span_class(display_freq)]'><b>\[[freq_text]\][part_b_extra]</b> <span class='name'>" // goes in the actual output
 
 		// --- Some more pre-message formatting ---
 		var/part_b = "</span> <span class='message'>" // Tweaked for security headsets -- TLE
@@ -368,7 +366,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 
 		var/quotedmsg = null
 		if(M)
-			quotedmsg = M.say_quote(message)
+			quotedmsg = M.say_quote_old(message)
 		else
 			quotedmsg = "says, \"[message]\""
 
@@ -454,7 +452,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	return TRUE
 
 
-/proc/Broadcast_SimpleMessage(var/source, var/frequency, var/text, var/data, var/mob/M, var/compression, var/list/levels)
+/proc/Broadcast_SimpleMessage(source, frequency, text, data, mob/M, compression, list/levels)
 
   /* ###### Prepare the radio connection ###### */
 
@@ -555,10 +553,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 		if(data == 3) // intercepted radio message
 			part_b_extra = " <i>(Intercepted)</i>"
 
-		// Create a radio headset for the sole purpose of using its icon
-		var/obj/item/device/radio/headset/radio = new
-
-		var/part_b = "</span><b> \icon[radio]\[[freq_text]\][part_b_extra]</b> <span class='message'>" // Tweaked for security headsets -- TLE
+		var/part_b = "</span><b>\[[freq_text]\][part_b_extra]</b> <span class='message'>" // Tweaked for security headsets -- TLE
 		var/part_blackbox_b = "</span><b> \[[freq_text]\]</b> <span class='message'>" // Tweaked for security headsets -- TLE
 		var/part_c = "</span></span>"
 
@@ -631,9 +626,9 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 /atom/proc/test_telecomms()
 	var/datum/signal/signal = src.telecomms_process()
 	var/turf/position = get_turf(src)
-	return (position.z in signal.data["level"] && signal.data["done"])
+	return (position.z in signal.data["level"]) && signal.data["done"]
 
-/atom/proc/telecomms_process(var/do_sleep = 1)
+/atom/proc/telecomms_process(do_sleep = 1)
 
 	// First, we want to generate a new radio signal
 	var/datum/signal/signal = new

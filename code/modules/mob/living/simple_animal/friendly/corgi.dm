@@ -9,8 +9,7 @@
 	emote_see = list("shakes its head", "shivers")
 	speak_chance = 1
 	turns_per_move = 10
-	meat_type = /obj/item/reagent_containers/food/snacks/meat/corgi
-	meat_amount = 3
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/corgi = list(3, BUTCHER_NORMAL))
 	response_help  = "pets"
 	response_disarm = "bops"
 	response_harm   = "kicks"
@@ -47,7 +46,7 @@
 	if(!stat && !resting && !buckled)
 		if(prob(1))
 			var/msg2 = (pick("dances around","chases their tail"))
-			src.visible_message("<span class='name'>[src]</span> [msg2].")
+			src.visible_message("[span_name("[src]")] [msg2].")
 			spawn(0)
 				for(var/i in list(1,2,4,8,4,2,1,2,4,8,4,2,1,2,4,8,4,2))
 					set_dir(i)
@@ -64,7 +63,7 @@
 /mob/living/simple_animal/corgi/attackby(obj/item/O, mob/user)  //Marker -Agouri
 	if(istype(O, /obj/item/newspaper))
 		if(!stat)
-			visible_message(SPAN_NOTICE("[user] baps [name] on the nose with the rolled up [O.name]."))
+			visible_message(span_notice("[user] baps [name] on the nose with the rolled up [O.name]."))
 			scan_interval = max_scan_interval//discipline your dog to make it stop stealing food for a while
 			movement_target = null
 			foodtarget = 0
@@ -109,7 +108,7 @@
 //pupplies cannot wear anything.
 /mob/living/simple_animal/corgi/puppy/Topic(href, href_list)
 	if(href_list["remove_inv"] || href_list["add_inv"])
-		to_chat(usr, "\red You can't fit this on [src]")
+		to_chat(usr, span_red("You can't fit this on [src]"))
 		return
 	..()
 
@@ -129,7 +128,7 @@
 //Lisa already has a cute bow!
 /mob/living/simple_animal/corgi/Lisa/Topic(href, href_list)
 	if(href_list["remove_inv"] || href_list["add_inv"])
-		to_chat(usr, "\red [src] already has a cute bow!")
+		to_chat(usr, span_red("[src] already has a cute bow!"))
 		return
 	..()
 
@@ -160,7 +159,7 @@
 
 		if(prob(1))
 			var/msg3 = (pick("dances around","chases her tail"))
-			src.visible_message("<span class='name'>[src]</span> [msg3].")
+			src.visible_message("[span_name("[src]")] [msg3].")
 			spawn(0)
 				for(var/i in list(1,2,4,8,4,2,1,2,4,8,4,2,1,2,4,8,4,2))
 					set_dir(i)

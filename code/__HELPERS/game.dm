@@ -1,12 +1,12 @@
 //This file was auto-corrected by findeclaration.exe on 25.5.2012 20:42:31
 
-/proc/dopage(src, target)
+/proc/dopage(source, target)
 	var/href_list
 	var/href
-	href_list = params2list("src=\ref[src]&[target]=1")
-	href = "src=\ref[src];[target]=1"
-	src:temphtml = null
-	src:Topic(href, href_list)
+	href_list = params2list("src=\ref[source]&[target]=1")
+	href = "src=\ref[source];[target]=1"
+	source:temphtml = null
+	source:Topic(href, href_list)
 	return null
 
 /proc/get_z(O)
@@ -178,21 +178,20 @@
 	// Returns a list of mobs who can hear any of the radios given in @radios
 	var/list/speaker_coverage = list()
 	for(var/obj/item/device/radio/R in radios)
-		if(R)
-			//Cyborg checks. Receiving message uses a bit of cyborg's charge.
-			var/obj/item/device/radio/borg/BR = R
-			if(istype(BR) && BR.myborg)
-				var/mob/living/silicon/robot/borg = BR.myborg
-				var/datum/robot_component/CO = borg.get_component("radio")
-				if(!CO)
-					continue //No radio component (Shouldn't happen)
-				if(!borg.is_component_functioning("radio") || !borg.cell_use_power(CO.active_usage))
-					continue //No power.
+		//Cyborg checks. Receiving message uses a bit of cyborg's charge.
+		var/obj/item/device/radio/borg/BR = R
+		if(istype(BR) && BR.myborg)
+			var/mob/living/silicon/robot/borg = BR.myborg
+			var/datum/robot_component/CO = borg.get_component("radio")
+			if(!CO)
+				continue //No radio component (Shouldn't happen)
+			if(!borg.is_component_functioning("radio") || !borg.cell_use_power(CO.active_usage))
+				continue //No power.
 
-			var/turf/speaker = get_turf(R)
-			if(speaker)
-				for(var/turf/T in hear(R.canhear_range, speaker))
-					speaker_coverage[T] = T
+		var/turf/speaker = get_turf(R)
+		if(speaker)
+			for(var/turf/T in hear(R.canhear_range, speaker))
+				speaker_coverage[T] = T
 
 
 	// Try to find all the players who can hear the message
@@ -289,8 +288,29 @@
 		i++
 	return candidates
 
+///Get active players who are playing in the round
+/proc/get_active_player_count(alive_check = FALSE, afk_check = FALSE, human_check = FALSE)
+	var/active_players = 0
+	for(var/mob/player_mob as anything in GLOB.player_list)
+		if(!player_mob?.client)
+			continue
+		if(alive_check && player_mob.stat == DEAD)
+			continue
+		if(afk_check && player_mob.client.is_afk())
+			continue
+		if(human_check && !ishuman(player_mob))
+			continue
+		if(isnewplayer(player_mob)) // exclude people in the lobby
+			continue
+		if(isobserver(player_mob)) // Ghosts are fine if they were playing once (didn't start as observers)
+			var/mob/observer/ghost/ghost_player = player_mob
+			if(ghost_player.started_as_observer) // Exclude people who started as observers
+				continue
+		active_players++
+	return active_players
+
 /proc/ScreenText(obj/O, maptext="", screen_loc="CENTER-7,CENTER-7", maptext_height=480, maptext_width=480)
-	if(!isobj(O))	O = new /obj/screen/text()
+	if(!isobj(O))	O = new /atom/movable/screen/text()
 	O.maptext = maptext
 	O.maptext_height = maptext_height
 	O.maptext_width = maptext_width
@@ -299,7 +319,7 @@
 
 /proc/Show2Group4Delay(obj/O, list/group, delay=0)
 	if(!isobj(O))	return
-	if(!group)	group = clients
+	if(!group)	group = GLOB.clients
 	for(var/client/C in group)
 		C.screen += O
 	if(delay)
@@ -307,12 +327,40 @@
 			for(var/client/C in group)
 				C.screen -= O
 
-/proc/flick_overlay(image/I, list/show_to, duration)
-	for(var/client/C in show_to)
-		C.images += I
-	spawn(duration)
-		for(var/client/C in show_to)
-			C.images -= I
+/// Adds an image to a client's `.images`. Useful as a callback.
+/proc/add_image_to_client(image/image_to_remove, client/add_to)
+	add_to?.images += image_to_remove
+
+/// Like add_image_to_client, but will add the image from a list of clients
+/proc/add_image_to_clients(image/image_to_remove, list/show_to)
+	for(var/client/add_to in show_to)
+		add_to.images += image_to_remove
+
+/// Removes an image from a client's `.images`. Useful as a callback.
+/proc/remove_image_from_client(image/image_to_remove, client/remove_from)
+	remove_from?.images -= image_to_remove
+
+/// Like remove_image_from_client, but will remove the image from a list of clients
+/proc/remove_image_from_clients(image/image_to_remove, list/hide_from)
+	for(var/client/remove_from in hide_from)
+		remove_from.images -= image_to_remove
+
+/// Add an image to a list of clients and calls a proc to remove it after a duration
+/proc/flick_overlay_global(image/image_to_show, list/show_to, duration)
+	if(!length(show_to) || !image_to_show)
+		return
+	for(var/client/add_to in show_to)
+		add_to.images += image_to_show
+	addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(remove_image_from_clients), image_to_show, show_to), duration, TIMER_CLIENT_TIME)
+
+///Flicks a certain overlay onto an atom, handling icon_state strings
+/atom/proc/flick_overlay(image_to_show, list/show_to, duration, layer)
+	var/image/passed_image = \
+		istext(image_to_show) \
+			? image(icon, src, image_to_show, layer) \
+			: image_to_show
+
+	flick_overlay_global(passed_image, show_to, duration)
 
 /datum/projectile_data
 	var/src_x
@@ -437,7 +485,7 @@
 /proc/getOPressureDifferential(turf/loc)
 	var/minp=16777216;
 	var/maxp=0;
-	for(var/dir in cardinal)
+	for(var/dir in GLOB.cardinal)
 		var/turf/T=get_turf(get_step(loc, dir))
 		var/cp=0
 		if(T && istype(T) && T.zone)
@@ -457,7 +505,7 @@
 
 /proc/getCardinalAirInfo(turf/loc, list/stats=list("temperature"))
 	var/list/temps = new/list(4)
-	for(var/dir in cardinal)
+	for(var/dir in GLOB.cardinal)
 		var/direction
 		switch(dir)
 			if(NORTH)
@@ -535,8 +583,8 @@
 	if (L.len)
 		return pick(L)
 
-/proc/activate_mobs_in_range(atom/caller , distance)
-	var/turf/starting_point = get_turf(caller)
+/proc/activate_mobs_in_range(atom/requester , distance)
+	var/turf/starting_point = get_turf(requester)
 	if(!starting_point)
 		return FALSE
 	for(var/mob/living/potential_attacker in SSmobs.mob_living_by_zlevel[starting_point.z])
@@ -545,3 +593,28 @@
 		if(!(get_dist(starting_point, potential_attacker) <= distance))
 			continue
 		potential_attacker.try_activate_ai()
+
+///sends a whatever to all playing players; use instead of to_chat(world, where needed)
+/proc/send_to_playing_players(thing)
+	for(var/player_mob in GLOB.player_list)
+		if(player_mob && !isnewplayer(player_mob))
+			to_chat(player_mob, thing)
+
+/// Sends a message to all dead and observing players, if a source is provided a follow link will be attached.
+/proc/send_to_observers(message, source)
+	var/list/all_observers = GLOB.dead_mob_list
+	for(var/mob/observer as anything in all_observers)
+		if (isnull(source))
+			to_chat(observer, "[message]")
+			continue
+		var/link = FOLLOW_LINK(observer, source)
+		to_chat(observer, "[link] [message]")
+
+// TODO: Implement preferences for this
+///Flash the window of a player
+/proc/window_flash(client/flashed_client)
+	if(ismob(flashed_client))
+		var/mob/player_mob = flashed_client
+		if(player_mob.client)
+			flashed_client = player_mob.client
+	winset(flashed_client, "mainwindow", "flash=5")

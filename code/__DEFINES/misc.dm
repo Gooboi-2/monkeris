@@ -24,6 +24,7 @@
 
 #define SEE_INVISIBLE_MINIMUM 5
 #define INVISIBILITY_MAXIMUM 100
+#define INVISIBILITY_ABSTRACT 101 //only used for abstract objects (e.g. spacevine_controller), things that are not really there.
 
 // Some arbitrary defines to be used by self-pruning global lists.
 #define PROCESS_KILL 26 // Used to trigger removal from a processing list.
@@ -106,10 +107,10 @@
 #define COIN_GOLD "Gold coin"
 #define COIN_SILVER "Silver coin"
 #define COIN_DIAMOND "Diamond coin"
-#define COIN_IRON "Iron coin"
+#define COIN_PLASTEEL "Plasteel coin"
 #define COIN_PLASMA "Solid plasma coin"
 #define COIN_URANIUM "Uranium coin"
-#define COIN_PLATINUM "Platunum coin"
+#define COIN_PLATINUM "Platinum coin"
 
 #define SHARD_SHARD "shard"
 #define SHARD_SHRAPNEL "shrapnel"
@@ -218,8 +219,6 @@
 #define MOUSE_OPACITY_ICON 1
 #define MOUSE_OPACITY_OPAQUE 2
 
-//Filters
-#define AMBIENT_OCCLUSION filter(type="drop_shadow", x=0, y=-2, size=4, color="#04080FAA")
 
 //Built-in email accounts
 #define EMAIL_DOCUMENTS "document.server@internal-services.net"
@@ -233,7 +232,7 @@
 #define TWEAKABLE_COMPUTER_PART_SLOTS 8
 
  //Preference save/load cooldown. This is in deciseconds.
-#define PREF_SAVELOAD_COOLDOWN 4 //Should be sufficiently hard to achieve without a broken mouse or autoclicker while still fulfilling its intended goal.
+#define PREF_SAVELOAD_COOLDOWN 0.8 SECONDS //Should be sufficiently hard to achieve without a broken mouse or autoclicker while still fulfilling its intended goal.
 
 #define JOINTEXT(X) jointext(X, null)
 
@@ -280,7 +279,7 @@
 // Spawns multiple objects of the same type
 #define cast_new(type, num, args...) if((num) == 1) { new type(args) } else { for(var/i in 1 to num) { new type(args) } }
 
-#define CLIENT_FROM_VAR(I) (ismob(I) ? I:client : (istype(I, /client) ? I : (istype(I, /datum/mind) ? I:current?:client : null)))
+#define CLIENT_FROM_VAR(I) (ismob(I) ? I:client : (isclient(I) ? I : (istype(I, /datum/mind) ? I:current?:client : null)))
 
 
 // Maploader bounds indices
@@ -350,11 +349,6 @@
 //Sounds list
 #define WALLHIT_SOUNDS list('sound/effects/wallhit.ogg', 'sound/effects/wallhit2.ogg', 'sound/effects/wallhit3.ogg')
 
-//Prevent the master controller from starting automatically
-#define NO_INIT_PARAMETER "no-init"
-//Force the log directory to be something specific in the data/logs folder
-#define OVERRIDE_LOG_DIRECTORY_PARAMETER "log-directory"
-
 /// Required minimum values to see reagents in a beaker
 #define HUMAN_REQ_COG_FOR_REG 35
 #define HUMAN_REQ_BIO_FOR_REG 50
@@ -366,4 +360,20 @@
 #define TTS_SEED_DEFAULT_FEMALE "Female_1"
 #define TTS_SEED_DEFAULT_MALE "Male_1"
 #define TTS_SEED_ANNOUNCER "Robot_2"
+
+
+//world/proc/shelleo
+#define SHELLEO_ERRORLEVEL 1
+#define SHELLEO_STDOUT 2
+#define SHELLEO_STDERR 3
+
+/// File path used for the "enable tracy next round" functionality
+/// The server port is appended to the end of the filename to avoid conflicts if multiple servers share the same data folder.
+#define TRACY_ENABLE_PATH	"data/enable_tracy"
+/// The DLL path for byond-tracy.
+#define TRACY_DLL_PATH		(world.system_type == MS_WINDOWS ? "prof.dll" : "./libprof.so")
+
+/// Path for the byond-memorystats dll
+
+#define MEMORYSTATS_DLL_PATH (world.system_type == MS_WINDOWS ? "memorystats.dll" : "./libmemorystats.so")
 

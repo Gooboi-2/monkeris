@@ -9,7 +9,7 @@
 	speak_chance = 1
 	turns_per_move = 5
 	see_in_dark = 6
-	meat_type = /obj/item/reagent_containers/food/snacks/meat/bearmeat
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/bearmeat = list(5, BUTCHER_NORMAL))
 	response_help  = "pets"
 	response_disarm = "gently pushes aside"
 	response_harm   = "pokes"
@@ -100,7 +100,7 @@
 				return
 
 
-/mob/living/simple_animal/hostile/bear/attackby(var/obj/item/O as obj, var/mob/user as mob)
+/mob/living/simple_animal/hostile/bear/attackby(obj/item/O as obj, mob/user as mob)
 	if(stance != HOSTILE_STANCE_ATTACK && stance != HOSTILE_STANCE_ATTACKING)
 		stance = HOSTILE_STANCE_ALERT
 		stance_step = 6

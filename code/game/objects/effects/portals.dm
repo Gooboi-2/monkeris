@@ -113,7 +113,7 @@ var/list/portal_cache = list()
 
 /obj/effect/portal/wormhole/New(loc, lifetime, exit)
 	if(admin_announce_new)
-		message_admins("Wormhole with lifetime [time2text(lifetime, "hh hours, mm minutes and ss seconds")] created at ([jumplink(src)])", 0, 1)
+		message_admins("Wormhole with lifetime [time2text(lifetime, "hh hours, mm minutes and ss seconds", NO_TIMEZONE)] created at ([jumplink(src)])", 0, 1)
 	..(loc, lifetime)
 	set_target(exit)
 	pair()
@@ -160,7 +160,7 @@ var/list/portal_cache = list()
 
 	//There's no wormhole in the target tile yet. We shall make one
 	if (!partner)
-		partner = new /obj/effect/portal/wormhole(T, lifetime, loc)
+		partner = new /obj/effect/portal/wormhole(T, lifetime, get_turf(src))
 
 
 

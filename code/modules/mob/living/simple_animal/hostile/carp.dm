@@ -5,7 +5,8 @@
 	icon_gib = "carp_gib"
 	speak_chance = 0
 	turns_per_move = 5
-	meat_type = /obj/item/reagent_containers/food/snacks/meat/carp
+
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/carp = list(4, BUTCHER_DIFFICULT))
 	response_help = "pets the"
 	response_disarm = "gently pushes aside the"
 	response_harm = "hits the"
@@ -48,4 +49,4 @@
 	if(istype(L))
 		if(prob(15))
 			L.Weaken(3)
-			L.visible_message(SPAN_DANGER("\the [src] knocks down \the [L]!"))
+			L.visible_message(span_danger("\the [src] knocks down \the [L]!"))

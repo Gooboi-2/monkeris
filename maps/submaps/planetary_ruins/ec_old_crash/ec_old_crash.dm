@@ -50,9 +50,13 @@
 /obj/item/disk/astrodata
 	name = "astronomical data disk"
 	desc = "A disk with a wealth of astronomical data recorded. Astrophysicists at the EC Observatory would love to see this."
-	icon = 'icons/obj/cloning.dmi'
-	icon_state = "datadisk0"
+	icon = 'icons/obj/discs.dmi'
+	icon_state = "data-blue"
 	item_state = "card-id"
+	item_icons = list(
+		slot_l_hand_str = 'icons/mob/inhands/equipment/idcards_lefthand.dmi',
+		slot_r_hand_str = 'icons/mob/inhands/equipment/idcards_lefthand.dmi',
+		)
 	w_class = ITEM_SIZE_SMALL
 	spawn_blacklisted = TRUE
 
@@ -64,7 +68,7 @@
 
 /obj/item/ecletters/Initialize()
 	. = ..()
-	desc = "A bunch of letters from crewmembers to their family and loved ones, dated [game_year - 142]. They're not hopeful."
+	desc = "A bunch of letters from crewmembers to their family and loved ones, dated [CURRENT_SHIP_YEAR - 142]. They're not hopeful."
 
 /obj/item/paper/ecrashlog
 	name = "handwritten note"
@@ -73,7 +77,7 @@
 /obj/item/paper/ecrashlog/Initialize()
 	. = ..()
 	var/shipname = "CEV [pick("Magellan", "Gagarin", "Drake", "Horizon", "Aurora")]"
-	var/datum/species/S = all_species[SPECIES_HUMAN]
+	var/datum/species/S = GLOB.all_species[SPECIES_HUMAN]
 	var/new_info = {"
 	I am Lieutenant Hao Ru, captain of [shipname], of the Hansa Trade Union.<br>
 	We are dying. The Ran Mission has failed.<br>
@@ -90,7 +94,7 @@
 	Senior Explorer [S.get_random_name(pick(MALE,FEMALE))]<br>
 	Explorer [S.get_random_name(pick(MALE,FEMALE))]<br>
 	I am Lieutenant Hao Ru, captain of [shipname] of the Hansa Trade Union. I will be joining my crew in cryo now.<br>
-	<i>3rd December [game_year - 142]</i></tt>
+	<i>3rd December [CURRENT_SHIP_YEAR - 142]</i></tt>
 	"}
 	set_content(new_info)
 

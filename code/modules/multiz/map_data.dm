@@ -127,22 +127,22 @@ GLOBAL_DATUM_INIT(maps_data, /datum/maps_data, new)
 	var/path = "eris"
 
 	var/access_modify_region = list(
-		ACCESS_REGION_SECURITY = list(access_hos, access_change_ids, access_change_sec),
-		ACCESS_REGION_MEDBAY = list(access_cmo, access_change_ids, access_change_medbay),
-		ACCESS_REGION_RESEARCH = list(access_rd, access_change_ids, access_change_research),
-		ACCESS_REGION_ENGINEERING = list(access_ce, access_change_ids, access_change_engineering),
-		ACCESS_REGION_COMMAND = list(access_change_ids),
-		ACCESS_REGION_GENERAL = list(access_change_ids,
-										access_change_cargo,
-										access_change_club,
-										access_change_engineering,
-										access_change_medbay,
-										access_change_nt,
-										access_change_research,
-										access_change_sec),
-		ACCESS_REGION_SUPPLY = list(access_change_ids, access_change_cargo),
-		ACCESS_REGION_CHURCH = list(access_nt_preacher, access_change_ids, access_change_nt),
-		ACCESS_REGION_CLUB = list(access_change_ids, access_change_club)
+		list(access_hos, access_change_ids, access_change_sec), // ACCESS_REGION_SECURITY
+		list(access_cmo, access_change_ids, access_change_medbay), // ACCESS_REGION_MEDBAY
+		list(access_rd, access_change_ids, access_change_research), // ACCESS_REGION_RESEARCH
+		list(access_ce, access_change_ids, access_change_engineering), // ACCESS_REGION_ENGINEERING
+		list(access_change_ids), // ACCESS_REGION_COMMAND
+		list(access_change_ids, // ACCESS_REGION_GENERAL
+			access_change_cargo,
+			access_change_club,
+			access_change_engineering,
+			access_change_medbay,
+			access_change_nt,
+			access_change_research,
+			access_change_sec),
+		list(access_change_ids, access_change_cargo), // ACCESS_REGION_SUPPLY
+		list(access_nt_preacher, access_change_ids, access_change_nt), // ACCESS_REGION_CHURCH
+		list(access_change_ids, access_change_club) // ACCESS_REGION_CLUB
 	)
 
 	//HOLOMAP
@@ -162,10 +162,12 @@ GLOBAL_DATUM_INIT(maps_data, /datum/maps_data, new)
 	S.cd = original_cd // Attempting to make this call as side-effect free as possible
 
 /datum/maps_data/proc/private_use_legacy_saves(savefile/S, slot)
-	if(!S.dir.Find(path)) // If we cannot find the map path folder, load the legacy save
-		return TRUE
-	S.cd = "/[path]" // Finally, if we cannot find the character slot in the map path folder, load the legacy save
-	return !S.dir.Find("character[slot]")
+	// Directly read the version key at the path
+	// If no version is found, the slot has no version data, fall back to legacy
+	S.cd = "/[path]/character[slot]"
+	var/new_version
+	S["version"] >> new_version
+	return !new_version
 
 
 /datum/maps_data/proc/registrate(obj/map_data/MD)

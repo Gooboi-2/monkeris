@@ -67,7 +67,7 @@ semi accepts weird caliber - +1 points
 	w_class = ITEM_SIZE_SMALL
 	matter = list(MATERIAL_PLASTEEL = 5)
 	generic = TRUE
-	var/part_overlay
+	var/part_overlay = ""
 	var/part_itemstring
 	var/needs_grip_type
 	generic = FALSE
@@ -75,22 +75,31 @@ semi accepts weird caliber - +1 points
 	var/datum/component/item_upgrade/I // For changing stats when needed
 	var/old_quality = 0
 	var/max_quality = 2
+	var/interactions
+	///if defined, this gunpart can only be placed on an item with barrels of this caliber
+	var/list/accepted_calibers = list()
 
 	// Bonuses from forging/type or maluses from printing
 	var/cheap = FALSE // Set this to true for cheap variants
 
-/obj/item/part/gun/modular/New(location)
+/obj/item/part/gun/modular/New(location, quality = 0)
 	..()
 	I = AddComponent(/datum/component/item_upgrade)
+	if(interactions)
+		interactions = new interactions(src)
 	I.weapon_upgrades = list(
-		UPGRADE_MAXUPGRADES = 1 // Since this takes an upgrade slot, we want to give it back
+		UPGRADE_MAXUPGRADES = 1, // Since this takes an upgrade slot, we want to give it back
+		GUN_UPGRADE_REPLACE_INTERACTIONS = interactions // used for overriding gun behavior
 		)
 	I.req_gun_tags = list(GUN_MODULAR)
 	I.removable = MOD_INTEGRAL // Will get unique removal handling when we get there, until then works by disassembling the frame
 	I.removal_time = WORKTIME_SLOW
 	I.removal_difficulty = FAILCHANCE_NORMAL
 
-/obj/item/part/gun/modular/set_quality(var/quality = 0)
+	if(quality)
+		set_quality(quality)
+
+/obj/item/part/gun/modular/set_quality(quality = 0)
 	old_quality = CLAMP(quality, -2, max_quality) // Some parts, such as One Star will permit +3 parts
 	price_tag = initial(price_tag) * (2 ** old_quality) // From a quarter of the price for junk, to quadruple the price for antag-grade parts.
 
@@ -166,21 +175,21 @@ semi accepts weird caliber - +1 points
 /obj/item/part/gun/frame/attackby(obj/item/I, mob/living/user, params)
 	if(istype(I, /obj/item/part/gun/modular/grip))
 		if(InstalledGrip)
-			to_chat(user, SPAN_WARNING("[src] already has a grip attached!"))
+			to_chat(user, span_warning("[src] already has a grip attached!"))
 			return
 		else
 			handle_gripvar(I, user)
 
 	if(istype(I, /obj/item/part/gun/modular/mechanism))
 		if(InstalledMechanism)
-			to_chat(user, SPAN_WARNING("[src] already has a mechanism attached!"))
+			to_chat(user, span_warning("[src] already has a mechanism attached!"))
 			return
 		else
 			handle_mechanismvar(I, user)
 
 	if(istype(I, /obj/item/part/gun/modular/barrel))
 		if(InstalledBarrel)
-			to_chat(user, SPAN_WARNING("[src] already has a barrel attached!"))
+			to_chat(user, span_warning("[src] already has a barrel attached!"))
 			return
 		else
 			handle_barrelvar(I, user)
@@ -188,9 +197,9 @@ semi accepts weird caliber - +1 points
 	var/tool_type = I.get_tool_type(user, list(QUALITY_SCREW_DRIVING, serial_type ? QUALITY_HAMMERING : null), src)
 	switch(tool_type)
 		if(QUALITY_HAMMERING)
-			user.visible_message(SPAN_NOTICE("[user] begins scribbling \the [name]'s gun serial number away."), SPAN_NOTICE("You begin removing the serial number from \the [name]."))
+			user.visible_message(span_notice("[user] begins scribbling \the [name]'s gun serial number away."), span_notice("You begin removing the serial number from \the [name]."))
 			if(I.use_tool(user, src, WORKTIME_SLOW, QUALITY_HAMMERING, FAILCHANCE_EASY, required_stat = STAT_MEC))
-				user.visible_message(SPAN_DANGER("[user] removes \the [name]'s gun serial number."), SPAN_NOTICE("You successfully remove the serial number from \the [name]."))
+				user.visible_message(span_danger("[user] removes \the [name]'s gun serial number."), span_notice("You successfully remove the serial number from \the [name]."))
 				serial_type = null
 				return
 
@@ -216,43 +225,43 @@ semi accepts weird caliber - +1 points
 			var/variantnum = gripvars.Find(I.type)
 			result = resultvars[variantnum]
 			InstalledGrip = I
-			to_chat(user, SPAN_NOTICE("You have attached the grip to \the [src]."))
+			to_chat(user, span_notice("You have attached the grip to \the [src]."))
 			return
 	else
-		to_chat(user, SPAN_WARNING("This grip does not fit!"))
+		to_chat(user, span_warning("This grip does not fit!"))
 		return
 
 /obj/item/part/gun/frame/proc/handle_mechanismvar(obj/item/I, mob/living/user)
 	if(I.type == mechanismvar)
 		if(insert_item(I, user))
 			InstalledMechanism = I
-			to_chat(user, SPAN_NOTICE("You have attached the mechanism to \the [src]."))
+			to_chat(user, span_notice("You have attached the mechanism to \the [src]."))
 			return
 	else
-		to_chat(user, SPAN_WARNING("This mechanism does not fit!"))
+		to_chat(user, span_warning("This mechanism does not fit!"))
 		return
 
 /obj/item/part/gun/frame/proc/handle_barrelvar(obj/item/I, mob/living/user)
 	if(I.type in barrelvars)
 		if(insert_item(I, user))
 			InstalledBarrel = I
-			to_chat(user, SPAN_NOTICE("You have attached the barrel to \the [src]."))
+			to_chat(user, span_notice("You have attached the barrel to \the [src]."))
 			return
 	else
-		to_chat(user, SPAN_WARNING("This barrel does not fit!"))
+		to_chat(user, span_warning("This barrel does not fit!"))
 		return
 
 /obj/item/part/gun/frame/attack_self(mob/user)
 	. = ..()
 	var/turf/T = get_turf(src)
 	if(!InstalledGrip)
-		to_chat(user, SPAN_WARNING("\the [src] does not have a grip!"))
+		to_chat(user, span_warning("\the [src] does not have a grip!"))
 		return
 	if(!InstalledMechanism)
-		to_chat(user, SPAN_WARNING("\the [src] does not have a mechanism!"))
+		to_chat(user, span_warning("\the [src] does not have a mechanism!"))
 		return
 	if(!InstalledBarrel)
-		to_chat(user, SPAN_WARNING("\the [src] does not have a barrel!"))
+		to_chat(user, span_warning("\the [src] does not have a barrel!"))
 		return
 	var/obj/item/gun/G = new result(T)
 	G.serial_type = serial_type
@@ -265,25 +274,25 @@ semi accepts weird caliber - +1 points
 
 /obj/item/part/gun/frame/examine(mob/user, extra_description = "")
 	if(InstalledGrip)
-		extra_description += SPAN_NOTICE("\the [src] has \a [InstalledGrip] installed.")
+		extra_description += span_notice("\the [src] has \a [InstalledGrip] installed.")
 	else
-		extra_description += SPAN_NOTICE("\the [src] does not have a grip installed.")
+		extra_description += span_notice("\the [src] does not have a grip installed.")
 
 	if(InstalledMechanism)
-		extra_description += SPAN_NOTICE("\the [src] has \a [InstalledMechanism] installed.")
+		extra_description += span_notice("\the [src] has \a [InstalledMechanism] installed.")
 	else
-		extra_description += SPAN_NOTICE("\the [src] does not have a mechanism installed.")
+		extra_description += span_notice("\the [src] does not have a mechanism installed.")
 
 	if(InstalledBarrel)
-		extra_description += SPAN_NOTICE("\the [src] has \a [InstalledBarrel] installed.")
+		extra_description += span_notice("\the [src] has \a [InstalledBarrel] installed.")
 	else
-		extra_description += SPAN_NOTICE("\the [src] does not have a barrel installed.")
+		extra_description += span_notice("\the [src] does not have a barrel installed.")
 
 	if(in_range(user, src) || isghost(user))
 		if(serial_type)
-			extra_description += SPAN_WARNING("There is a serial number on the frame, it reads [serial_type].")
+			extra_description += span_warning("There is a serial number on the frame, it reads [serial_type].")
 		else if(isnull(serial_type))
-			extra_description += SPAN_DANGER("The serial is scribbled away.")
+			extra_description += span_danger("The serial is scribbled away.")
 	..(user, extra_description)
 
 //Grips
@@ -301,13 +310,14 @@ semi accepts weird caliber - +1 points
 	var/type_of_grip = "wood" // Placeholder
 	part_itemstring = TRUE
 
-/obj/item/part/gun/modular/grip/New(location, var/quality = 0)
-	..(quality)
+/obj/item/part/gun/modular/grip/New(location, quality = 0)
+	..(quality = quality)
 	I.weapon_upgrades[GUN_UPGRADE_DEFINE_GRIP] = type_of_grip
 	I.weapon_upgrades[GUN_UPGRADE_OFFSET] = -15 // Without a grip the gun shoots funny, players are legally allowed to not use a grip
+	I.weapon_upgrades[GUN_UPGRADE_MELEEDAMAGE] = WEAPON_FORCE_WEAK - 1
 	I.gun_loc_tag = PART_GRIP
 
-/obj/item/part/gun/modular/grip/set_quality(var/quality = 0)
+/obj/item/part/gun/modular/grip/set_quality(quality = 0)
 	..(quality)
 	if(old_quality)
 		var/damage_name
@@ -364,6 +374,7 @@ semi accepts weird caliber - +1 points
 	type_of_grip = "makeshift"
 
 //Mechanisms
+//Target point total for generally accessible: +4
 /obj/item/part/gun/modular/mechanism
 	name = "generic mechanism"
 	desc = "All the bits that makes the bullet go bang."
@@ -373,25 +384,50 @@ semi accepts weird caliber - +1 points
 	matter = list(MATERIAL_PLASTEEL = 5)
 	price_tag = 100
 	rarity_value = 6
-	var/list/accepted_calibers = list(CAL_PISTOL, CAL_MAGNUM, CAL_SRIFLE, CAL_CLRIFLE, CAL_LRIFLE, CAL_SHOTGUN)
+
+	accepted_calibers = list(CAL_PISTOL, CAL_MAGNUM, CAL_SRIFLE, CAL_CLRIFLE, CAL_LRIFLE, CAL_SHOTGUN)
+	var/loader = SINGLE_CASING
 	var/mag_well = MAG_WELL_GENERIC
 	var/divisor_bonus = 0
 	var/recoil_bonus = 0
 	var/damage_bonus = 0
+	var/onehandpenalty = 0
+	var/max_shells = 0
 	var/list/bonus_firemodes = list()
+	var/no_internal_mag = FALSE
 
-/obj/item/part/gun/modular/mechanism/New(location, var/quality = 0)
-	..(quality)
+	var/sound_reload
+	var/sound_cocked
+	var/sound_insert
+
+/obj/item/part/gun/modular/mechanism/New(location, quality = 0)
+	..(quality = quality)
 	I.weapon_upgrades[GUN_UPGRADE_FIREMODES] = bonus_firemodes
 	I.weapon_upgrades[GUN_UPGRADE_DEFINE_MAG_WELL] = mag_well
 	I.weapon_upgrades[GUN_UPGRADE_DEFINE_OK_CALIBERS] = accepted_calibers
+	I.weapon_upgrades[GUN_UPGRADE_DEFINE_LOADER] = loader
+
+	if(sound_reload)
+		I.weapon_upgrades[GUN_UPGRADE_SET_RELOADSOUND] = sound_reload
+	if(sound_cocked)
+		I.weapon_upgrades[GUN_UPGRADE_SET_COCKEDSOUND] = sound_cocked
+	if(sound_insert)
+		I.weapon_upgrades[GUN_UPGRADE_SET_INSERTSOUND] = sound_insert
+	if(damage_bonus)
+		I.weapon_upgrades[GUN_UPGRADE_DAMAGEMOD_PLUS] = damage_bonus
+
 	if(divisor_bonus)
 		I.weapon_upgrades[GUN_UPGRADE_PEN_MULT] = divisor_bonus
 	if(recoil_bonus)
 		I.weapon_upgrades[GUN_UPGRADE_RECOIL] = recoil_bonus
+	if(max_shells)
+		I.weapon_upgrades[GUN_UPGRADE_MAGUP] = max_shells
+	if(no_internal_mag)
+		I.weapon_upgrades[GUN_UPGRADE_DENY_MAG] = TRUE
+
 	I.gun_loc_tag = PART_MECHANISM
 
-/obj/item/part/gun/modular/mechanism/set_quality(var/quality = 0)
+/obj/item/part/gun/modular/mechanism/set_quality(quality = 0)
 	..(quality)
 	if(old_quality)
 		var/damage_name
@@ -414,11 +450,16 @@ semi accepts weird caliber - +1 points
 	mag_well = MAG_WELL_PISTOL|MAG_WELL_H_PISTOL
 	accepted_calibers = list(CAL_PISTOL, CAL_MAGNUM, CAL_SRIFLE, CAL_CLRIFLE)
 	part_overlay = "mechanism_pistol"
+	loader = MAGAZINE
 
 /obj/item/part/gun/modular/mechanism/revolver
 	name = "revolver mechanism"
 	desc = "All the bits that makes the bullet go bang, rolling round and round."
 	icon_state = "mechanism_revolver"
+	max_shells = 6
+
+/obj/item/part/gun/modular/mechanism/revolver/seven
+	max_shells = 7
 
 /obj/item/part/gun/modular/mechanism/shotgun
 	name = "shotgun mechanism"
@@ -432,6 +473,19 @@ semi accepts weird caliber - +1 points
 	desc = "All the bits that makes the bullet go bang, in a speedy package."
 	icon_state = "mechanism_smg"
 	mag_well = MAG_WELL_SMG
+	loader = MAGAZINE
+	sound_reload = 'sound/weapons/guns/interact/smg_magin.ogg'
+
+//You'll need to define new parts for each 'unique' element of your gun
+//like, in this case, the drozd being an SMG gun which fires .40 rounds.
+//these parts can also be used to handle part of the unique statlines of weapons.
+/obj/item/part/gun/modular/mechanism/smg/highcaliber
+	name = "High-Caliber SMG mechanism"
+	desc = "All the bits that makes the bullet go bang, in a speedy package. \
+	This large-bore version is designed to fire higher caliber bullets, at a cost to penetrative power."
+	accepted_calibers = list(CAL_MAGNUM)
+	divisor_bonus = -0.5//this is where the drozd's pen mod has gone
+	bonus_firemodes = list(FULL_AUTO_300)//ditto for specific firemodes
 
 /obj/item/part/gun/modular/mechanism/autorifle
 	name = "generic self-loading mechanism"
@@ -439,6 +493,8 @@ semi accepts weird caliber - +1 points
 	icon_state = "mechanism_autorifle"
 	matter = list(MATERIAL_PLASTEEL = 10)
 	mag_well = MAG_WELL_RIFLE|MAG_WELL_RIFLE_L|MAG_WELL_RIFLE_D|MAG_WELL_IH
+	sound_reload = 'sound/weapons/guns/interact/ltrifle_magin.ogg'
+	loader = MAGAZINE
 
 // Basic - semiauto with high damage. Total point value: +4
 /obj/item/part/gun/modular/mechanism/autorifle/basic
@@ -502,9 +558,42 @@ semi accepts weird caliber - +1 points
 	desc = "All the bits that makes the bullet go bang, for all the military hardware you know and love. \
 			Offers 300 RPM fully automatic fire. Provides slightly improved damage output at the cost of fire control. Supports drum magazines."
 
+//this base version is used to separate out tactical mechanisms, to lock batrifles to this type specifically
+/obj/item/part/gun/modular/mechanism/autorifle/tactical
+	name = "tactical self-loading mechanism"
+	desc = "All the bits that makes the bullet go bang."
+	icon_state = "mechanism_machinegun"
+	matter = list(MATERIAL_PLASTEEL = 16)
+	mag_well = MAG_WELL_RIFLE|MAG_WELL_RIFLE_L|MAG_WELL_IH
+	bad_type = /obj/item/part/gun/modular/mechanism/autorifle/tactical
+
+// Makeshift - Poor recoil control with some middling stat buffs. +3 points
+/obj/item/part/gun/modular/mechanism/autorifle/tactical/makeshift
+	name = "improvised tactical mechanism"
+	desc = "All the bits that makes the bullet go bang. Constructed from scrap and spare parts."
+	icon_state = "mechanism_machinegun"
+	matter = list(MATERIAL_STEEL = 10)
+	mag_well = MAG_WELL_RIFLE|MAG_WELL_RIFLE_L|MAG_WELL_IH
+	accepted_calibers = list(CAL_SRIFLE, CAL_LRIFLE)
+	recoil_bonus = 1.25 // -2 points
+	damage_bonus = 0.2 // +4 points
+	divisor_bonus = 0.1 //+1 points
+	spawn_blacklisted = FALSE
+
+//A less-intense version of the commando mechanism.
+/obj/item/part/gun/modular/mechanism/autorifle/tactical/sustain
+	name = "sustaining tactical mechanism"
+	desc = "All the bits that makes the bullet go bang. Allows for automatic fire with decent handling, at the cost of barrel velocity."
+	icon_state = "mechanism_machinegun"
+	recoil_bonus = 0.9 // + 1
+	damage_bonus = -0.2 // - 4
+	divisor_bonus = 0
+	bonus_firemodes = list(BURST_2_ROUND, FULL_AUTO_300)// + 7
+	spawn_blacklisted = FALSE
+
 // Sharpshooter - Massively increased damage and moderately increased penetration at the cost of heavy recoil. Total point value: +4
-/obj/item/part/gun/modular/mechanism/autorifle/sharpshooter
-	name = "sharpshooter self-loading mechanism"
+/obj/item/part/gun/modular/mechanism/autorifle/tactical/sharpshooter
+	name = "sharpshooter tactical mechanism"
 	desc = "All the bits that makes the bullet go bang, for all the military hardware you know and love. \
 			Powerful semiauto mechanism, effective at maximizing the firepower of each bullet. Hard to control."
 	icon_state = "mechanism_autorifle"
@@ -513,19 +602,34 @@ semi accepts weird caliber - +1 points
 	recoil_bonus = 2 // -4 points
 	damage_bonus = 0.3 // +6 points
 	divisor_bonus = 0.2 // +2 points
+	spawn_blacklisted = FALSE
 
 // Marksman - Allows dual fire, and has both improved damage at the cost of penetration. Total point value: +4
-/obj/item/part/gun/modular/mechanism/autorifle/marksman
-	name = "marksman self-loading mechanism"
+/obj/item/part/gun/modular/mechanism/autorifle/tactical/marksman
+	name = "marksman tactical mechanism"
 	desc = "All the bits that makes the bullet go bang, for all the military hardware you know and love. \
 			Accurate mechanism with a 2-fire burst, for designated marksman rifles. Lacks penetration."
 	icon_state = "mechanism_autorifle"
-	accepted_calibers = list(CAL_SRIFLE, CAL_LRIFLE)
-	mag_well = MAG_WELL_RIFLE|MAG_WELL_RIFLE_L
 	recoil_bonus = 1.25 // -1.5 points
 	damage_bonus = 0.2 // +4 points
 	divisor_bonus = -0.25 // -2.5 points, encourages use of .20 to make up for it
 	bonus_firemodes = list(BURST_2_ROUND) // +4 points
+	spawn_blacklisted = FALSE
+
+// Commando - Enables high-rpm automatic fire with good handling, at the expense of damage and penetration.
+// Has somewhat mediocre performance outside of it's originally-intended frame (The STS-35).
+/obj/item/part/gun/modular/mechanism/autorifle/tactical/commando
+	name = "commando tactical mechanism"
+	desc = "All the bits that makes the bullet go bang, for all the military hardware you know and love. \
+			An unusual mechanism that combines fully automatic fire with effective handling for longer ranges, \
+			originally custom-made for a particular hybrid battle rifle, it suffers from very low exit pressure outside of its intended design."
+	icon_state = "mechanism_autorifle"
+	recoil_bonus = -0.8
+	damage_bonus = -0.3
+	divisor_bonus = -0.25
+	bonus_firemodes = list(BURST_3_ROUND, FULL_AUTO_400)
+	spawn_blacklisted = FALSE
+
 
 /obj/item/part/gun/modular/mechanism/machinegun
 	name = "machine gun mechanism"
@@ -534,6 +638,7 @@ semi accepts weird caliber - +1 points
 	matter = list(MATERIAL_PLASTEEL = 16)
 	rarity_value = 8
 	mag_well = MAG_WELL_BOX
+	loader = MAGAZINE
 
 // steel mechanisms
 /obj/item/part/gun/modular/mechanism/pistol/steel
@@ -565,6 +670,45 @@ semi accepts weird caliber - +1 points
 	desc = "All the bits that makes the bullet go bang, slow and methodical."
 	icon_state = "mechanism_boltaction"
 	matter = list(MATERIAL_STEEL = 3)
+	accepted_calibers = list(CAL_LRIFLE, CAL_SRIFLE, CAL_PISTOL, CAL_MAGNUM) // used by boltrifles
+	loader = SINGLE_CASING|SPEEDLOADER
+	interactions = /datum/guninteraction/bolted
+	max_shells = 10
+	divisor_bonus = 0.3
+	damage_bonus = 0.4
+	sound_reload = 'sound/weapons/guns/interact/rifle_load.ogg'
+
+/obj/item/part/gun/modular/mechanism/boltgun/power
+	accepted_calibers = list(CAL_SRIFLE, CAL_MAGNUM)
+	max_shells = 6
+	divisor_bonus = 1
+	damage_bonus = 0.8
+
+/obj/item/part/gun/modular/mechanism/boltgun/heavy
+	name = "heavy manual-action mechanism"
+	desc = "All the bits that makes the bullet go bang, slow and methodical; for larger calibers."
+	matter = list(MATERIAL_STEEL = 4)
+	accepted_calibers = list(CAL_SHOTGUN, CAL_MAGNUM, CAL_FLARE, CAL_ANTIM) // used by AMRs
+	part_overlay = "big_" // the full entry is handled by the guninteraction
+	loader = SINGLE_CASING
+	max_shells = 1
+	divisor_bonus = 0
+	damage_bonus = 1
+	no_internal_mag = TRUE
+
+/obj/item/part/gun/modular/mechanism/boltgun/junk
+	name = "handmade manual-action mechanism"
+	max_shells = 5
+	divisor_bonus = -0.3
+	damage_bonus = 0.5
+
+/obj/item/part/gun/modular/mechanism/levergun
+	name = "break-action mechanism"
+	desc = "This one breaks in half!"
+	// no icon state available
+	matter = list(MATERIAL_STEEL = 4)
+	accepted_calibers = list(CAL_MAGNUM, CAL_SHOTGUN) // used by leverguns only
+	max_shells = 7
 
 /obj/item/part/gun/modular/mechanism/autorifle/steel
 	name = "cheap self-loading mechanism"
@@ -583,14 +727,35 @@ semi accepts weird caliber - +1 points
 	price_tag = 200
 	rarity_value = 15
 	var/caliber = CAL_357
+	var/speed
+	var/onehandpenalty
+	var/recoilbuildup
+	var/pierce
+	var/basemove
+	var/fire_sound
+	var/fire_silenced_sound
 
-/obj/item/part/gun/modular/barrel/New(location, var/quality = 0)
-	..(quality)
+/obj/item/part/gun/modular/barrel/New(location, quality = 0)
+	..(quality = quality)
 	I.weapon_upgrades[GUN_UPGRADE_DEFINE_CALIBER] = caliber
+	if(!isnull(speed))
+		I.weapon_upgrades[GUN_UPGRADE_STEPDELAY_MULT] = speed
+	if(onehandpenalty)
+		I.weapon_upgrades[GUN_UPGRADE_ONEHANDPENALTY] = onehandpenalty
+	if(recoilbuildup)
+		I.weapon_upgrades[GUN_UPGRADE_RECOILBUILDUP] = recoilbuildup
+	if(pierce)
+		I.weapon_upgrades[GUN_UPGRADE_PIERC_MULT] = pierce
+	if(basemove)
+		I.weapon_upgrades[GUN_UPGRADE_BASESLOW] = basemove
+	if(fire_sound)
+		I.weapon_upgrades[GUN_UPGRADE_SET_FIRESOUND] = fire_sound
+	if(fire_silenced_sound)
+		I.weapon_upgrades[GUN_UPGRADE_SET_SILENT_FIRESOUND] = fire_silenced_sound
 	I.gun_loc_tag = PART_BARREL
 
 
-/obj/item/part/gun/modular/barrel/set_quality(var/quality = 0)
+/obj/item/part/gun/modular/barrel/set_quality(quality = 0)
 	..(quality)
 	if(old_quality)
 		var/damage_name
@@ -623,6 +788,7 @@ semi accepts weird caliber - +1 points
 	price_tag = 100
 	caliber = CAL_MAGNUM
 	part_overlay = "well_magnum"
+	fire_sound = 'sound/weapons/guns/fire/revolver_fire.ogg'
 
 /obj/item/part/gun/modular/barrel/srifle
 	name = ".20 barrel"
@@ -631,6 +797,14 @@ semi accepts weird caliber - +1 points
 	matter = list(MATERIAL_PLASTEEL = 8)
 	caliber = CAL_SRIFLE
 	part_overlay = "well_srifle"
+
+/obj/item/part/gun/modular/barrel/srifle/long
+	name = "long .20 barrel"
+	desc =	"A gun barrel, which keeps the bullet going in the right direction efficiently. Chambered in .20 caliber."
+	onehandpenalty = 1.2
+	recoilbuildup = 1.2
+	speed = 0.8
+	fire_sound = 'sound/weapons/guns/fire/sniper_fire.ogg'
 
 /obj/item/part/gun/modular/barrel/clrifle
 	name = ".25 barrel"
@@ -647,6 +821,7 @@ semi accepts weird caliber - +1 points
 	matter = list(MATERIAL_PLASTEEL = 8)
 	caliber = CAL_LRIFLE
 	part_overlay = "well_lrifle"
+	fire_sound = 'sound/weapons/guns/fire/lmg_fire.ogg'
 
 /obj/item/part/gun/modular/barrel/lrifle/forged
 	name = "forged .30 barrel"
@@ -666,14 +841,28 @@ semi accepts weird caliber - +1 points
 	matter = list(MATERIAL_PLASTEEL = 8)
 	caliber = CAL_SHOTGUN
 	part_overlay = "well_shotgun"
+	fire_sound = 'sound/weapons/guns/fire/shotgunp_fire.ogg'
 
 /obj/item/part/gun/modular/barrel/antim
 	name = ".60 barrel"
 	desc = "A gun barrel, which keeps the bullet going in the right direction. Chambered in .60 caliber."
 	icon_state = "barrel_60"
-	matter = list(MATERIAL_PLASTEEL = 16)
+	matter = list(MATERIAL_PLASTEEL = 10)
 	caliber = CAL_ANTIM
 	part_overlay = "well_amr"
+	fire_sound = 'sound/weapons/guns/fire/sniper_fire.ogg'
+	fire_silenced_sound = 'sound/weapons/guns/fire/smg_fire.ogg'
+
+/obj/item/part/gun/modular/barrel/antim/long
+	name = "long .60 barrel"
+	desc = "A long gun barrel, which keeps the bullet moving in the right direction efficiently. Chambered in .60 caliber."
+	matter = list(MATERIAL_PLASTEEL = 15)
+	speed = 0
+	part_overlay = "well_amr_long"
+	onehandpenalty = 2
+	recoilbuildup = 2
+	pierce = 6
+	basemove = 3
 
 // steel barrels
 /obj/item/part/gun/modular/barrel/pistol/steel
@@ -720,8 +909,178 @@ semi accepts weird caliber - +1 points
 	generic = FALSE
 	part_overlay = "stock"
 	needs_grip_type = TRUE
+	var/brace = 0
+	var/recoilbuildup
+	var/movementcost
+	var/onehandpenalty
+	var/wclassmod = 1
+	var/damagedone = 8
 
-/obj/item/part/gun/modular/stock/New(location, var/quality = 0)
+/obj/item/part/gun/modular/stock/New(location, quality = 0)
 	..() // No stat change, so no need for price change either
 	I.weapon_upgrades[GUN_UPGRADE_DEFINE_STOCK] = TRUE
 	I.gun_loc_tag = PART_STOCK
+
+	if(movementcost)
+		I.weapon_upgrades[GUN_UPGRADE_MOVEPENALTY] = movementcost
+	if(recoilbuildup)
+		I.weapon_upgrades[GUN_UPGRADE_RECOILBUILDUP] = recoilbuildup
+	if(onehandpenalty)
+		I.weapon_upgrades[GUN_UPGRADE_ONEHANDPENALTY] = onehandpenalty
+	I.weapon_upgrades[GUN_UPGRADE_DEFINE_WCLASS] = wclassmod
+	I.weapon_upgrades[GUN_UPGRADE_MELEEDAMAGE] = damagedone
+
+/obj/item/part/gun/modular/stock/heavy
+	recoilbuildup = 0.7
+	movementcost = 8
+	onehandpenalty = 3
+
+/obj/item/part/gun/modular/stock/longrifle
+	recoilbuildup = 0.8
+	movementcost = 5
+	onehandpenalty = 2.4
+	damagedone = 13
+
+/obj/item/part/gun/modular/sights
+	name = "iron sights"
+	desc = "A set of metal sights for aiming through."
+	var/list/scopes = list()
+	interactions = /datum/guninteraction/zoomed
+	var/scopeaccuracy
+	var/scopeseeinvis
+	var/darksight
+	var/list/powerboost
+
+/obj/item/part/gun/modular/sights/New(location, var/quality = 0)
+	..(quality)
+	I.weapon_upgrades[GUN_UPGRADE_ZOOM] = scopes
+	if(scopeseeinvis)
+		I.weapon_upgrades[GUN_UPGRADE_SCOPEVISION] = scopeseeinvis
+	if(scopeaccuracy)
+		I.weapon_upgrades[GUN_UPGRADE_SCOPECORRECTION] = scopeaccuracy
+	if(darksight)
+		I.weapon_upgrades[GUN_UPGRADE_DARKSCOPE] = darksight
+	if(powerboost)
+		I.weapon_upgrades[GUN_UPGRADE_SCOPE_POWER] = powerboost
+	I.gun_loc_tag = GUN_SCOPE
+
+/obj/item/part/gun/modular/sights/scopesmall // Arasaka boltgun
+	name = "small scope"
+	desc = "A sight for aiming through. This one is on the smaller side."
+	icon_state = "scope_small"
+	scopes = list(0.5)
+	part_overlay = "scope_small"
+
+/obj/item/part/gun/modular/sights/scopebig // Kadmin
+	name = "medium scope"
+	desc = "A sight for aiming through. This one is medium."
+	icon_state = "scope_big"
+	scopes = list(0.8)
+	part_overlay = "scope_big"
+
+/obj/item/part/gun/modular/sights/customizable
+
+/obj/item/part/gun/modular/sights/customizable/attackby(obj/item/Item, mob/living/user)
+	if(istype(Item, /obj/item/clothing/glasses/powered/thermal))
+		user.visible_message(SPAN_NOTICE("[user] inserts \a [Item] into [src]."), SPAN_NOTICE("You insert [Item] into \the [src]."), "You hear a faint click.", 5)
+		I.weapon_upgrades[GUN_UPGRADE_THERMAL] = TRUE
+		user.drop_from_inventory(Item, src)
+	else if(Item.has_quality(QUALITY_SCREW_DRIVING))
+		var/list/choices = contents.Copy()
+		choices += "Cancel"
+		var/obj/toremove = input("Which upgrade would you like to try to remove?","Removing Upgrades") in choices
+		if(toremove == "Cancel")
+			return TRUE
+		else if(!isnull(toremove))
+			toremove.forceMove(get_turf(src))
+			if(istype(toremove, /obj/item/clothing/glasses/powered/thermal))
+				I.weapon_upgrades[GUN_UPGRADE_THERMAL] = FALSE
+			to_chat(user, SPAN_NOTICE("You successfully remove [toremove] from \the [src]!"))
+
+
+/obj/item/part/gun/modular/sights/customizable/scopeheavy // AMR
+	name = "sniper scope"
+	desc = "A large adjustable sight for aiming through. Provides night vision. Can add advanced lenses to improve vision."
+	icon_state = "scope_heavy"
+	scopes = list(1,2)
+	part_overlay = "scope_heavy"
+	darksight = 7
+	scopeseeinvis = SEE_INVISIBLE_NOLIGHTING
+	scopeaccuracy = 8
+	powerboost = list(0.2, 0.4)
+	interactions = /datum/guninteraction/zoomed/multizoom
+
+/obj/item/part/gun/modular/bayonet
+	name = "integrated bayonet"
+	desc = "A bayonet designed for a firmer attachment, applied during assembly."
+	matter = list(MATERIAL_PLASTEEL = 3, MATERIAL_STEEL = 2)
+	icon = 'icons/obj/weapons.dmi'
+	icon_state = "dagger"
+	part_overlay = "bayonet"
+	var/damagedone = 6
+
+/obj/item/part/gun/modular/bayonet/New(location, var/quality = 0)
+	..(quality)
+	I.weapon_upgrades = list(
+		GUN_UPGRADE_BAYONET = TRUE,
+		GUN_UPGRADE_MELEEDAMAGE = damagedone,
+		GUN_UPGRADE_MELEEPENETRATION = ARMOR_PEN_MODERATE,
+		GUN_UPGRADE_OFFSET = 4,
+		GUN_UPGRADE_MELEEPENETRATION = (ARMOR_PEN_MODERATE-1),
+		)
+
+/obj/item/part/gun/modular/bayonet/steel
+	name = "cheap integrated bayonet"
+	desc = "A bayonet designed for a firmer attachment, applied during assembly. This one's made from cheap steel."
+	matter = list(MATERIAL_STEEL = 2)
+	damagedone = 3
+
+//normal silencer, buyable from beacon & findable in maint
+/obj/item/part/gun/modular/silencer
+	name = "compact silencer"
+	desc = "A screw-on cylinder which reduces the flash and noise of gunfire when attached to a firearm's barrel. \
+	Impedes the flow of gas out of the firearm, which slightly decreases firing recoil and reduces muzzle velocity."
+	matter = list(MATERIAL_STEEL = 10, MATERIAL_PLASTEEL)
+	var/muzzleflash_effect = 0.8
+	var/damage_reduction = -0.1
+	var/recoil_mult = 0.9
+	icon = 'icons/obj/guns/mods.dmi'
+	icon_state = "silencer"
+	part_overlay = "silencer_small"
+	accepted_calibers = list(CAL_357, CAL_PISTOL, CAL_MAGNUM, CAL_SRIFLE, CAL_CLRIFLE, CAL_LRIFLE)
+
+/obj/item/part/gun/modular/silencer/New(location, var/quality = 0)
+	..(quality)
+	I.weapon_upgrades = list(
+		GUN_UPGRADE_SILENCER = TRUE,
+		GUN_UPGRADE_MUZZLEFLASH = muzzleflash_effect,
+		GUN_UPGRADE_RECOIL = recoil_mult
+		)
+	I.weapon_upgrades[GUN_UPGRADE_DAMAGEMOD_PLUS] = damage_reduction
+	I.gun_loc_tag = GUN_MUZZLE
+
+//advanced silencer, only findable on specific pre-silenced weapons/from certain sources
+/obj/item/part/gun/modular/silencer/advanced
+	name = "advanced silencer"
+	desc = "A screw-on cylinder which reduces the flash and noise of gunfire when attached to a firearm's barrel. \
+	The interior of this silencer is designed with topography that mitigates the downsides of silencing & reduces muzzle flash even further."
+	matter = list(MATERIAL_PLASTEEL = 15)
+	muzzleflash_effect = 0.5
+	damage_reduction = -0.05
+	recoil_mult = 0.9
+	icon_state = "silencer_adv"
+	part_overlay = "silencer_advanced"
+	spawn_blacklisted = TRUE
+
+//made through crafting using an aural dampener toolmod & a normal compact silencer
+/obj/item/part/gun/modular/silencer/ultrasound
+	name = "ultrasound silencer"
+	desc = "A thin, elegant silencer which works by shifting the firing sound of the weapon into ultrasonic frequencies. \
+	This more gentle technique is less impeding to escaping gas, giving it little to no effect on muzzle velocity, flash, or recoil."
+	matter = list(MATERIAL_PLASTEEL = 10, MATERIAL_PLATINUM = 3)
+	muzzleflash_effect = 1
+	damage_reduction = 0
+	recoil_mult = 0
+	icon_state = "silencer_aural"
+	part_overlay = "silencer_aural"
+	spawn_blacklisted = TRUE

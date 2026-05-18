@@ -2,17 +2,17 @@
 	if(!owner || !owner.current)
 		return
 
-	var/text
+	var/text = ""
 
-	if (objectives.len)
+	if(length(objectives))
 		text = "<b>Your [role_text] current objectives:</b>"
-
-	if(faction)
+	else if(faction && length(faction.objectives))
 		text = "<b>Your [faction.name] faction current objectives:</b>"
 
 	text += print_objectives(FALSE)
 
-	to_chat(owner.current, text)
+	if(text)
+		to_chat(owner.current, text)
 
 /datum/antagonist/proc/greet()
 	if(!owner || !owner.current)
@@ -20,7 +20,7 @@
 
 	var/mob/player = owner.current
 	// Basic intro text.
-	to_chat(player, "<span class='danger'><font size=3>You are \a [role_text]!</font></span>")
+	to_chat(player, span_danger("<font size=3>You are \a [role_text]!</font>"))
 	if(faction)
 		if(src in faction.leaders)
 			to_chat(player, "You are a leader of the [faction.name]!")
@@ -39,7 +39,7 @@
 	var/tipsAndTricks/T = SStips.getRoleTip(src)
 	if(T)
 		var/mob/player = owner.current
-		to_chat(player, SStips.formatTip(T, "Tip for \a [role_text]: "))
+		to_chat(player, SStips.formatTip(T, "Tip for \a [role_text]"))
 
 /datum/antagonist/proc/get_special_objective_text()
 	return ""
@@ -54,7 +54,7 @@
 	// Display the results.
 	return text
 
-/datum/antagonist/proc/print_objectives(var/append_success = TRUE)
+/datum/antagonist/proc/print_objectives(append_success = TRUE)
 	var/text = get_special_objective_text()
 
 	var/list/contracts = list()
@@ -97,7 +97,6 @@
 				text += "<br><font color='red'><B>The [role_text] has failed.</B></font>"
 			else
 				text += "<br><font color='green'><B>The [role_text] was successful!</B></font>"
-
 	return text
 
 /datum/antagonist/proc/print_player()
@@ -128,7 +127,7 @@
 	var/TC_uses = 0
 	var/list/purchases = list()
 
-	for(var/obj/item/device/uplink/H in world_uplinks)
+	for(var/obj/item/device/uplink/H in GLOB.world_uplinks)
 		if(H.uplink_owner && H.uplink_owner == owner)
 			TC_uses += H.used_TC
 

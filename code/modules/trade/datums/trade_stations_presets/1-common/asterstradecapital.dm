@@ -61,8 +61,8 @@
 		"Toys" = list(
 			/obj/item/toy/balloon = good_data("Water Balloon", list(1, 50), null),
 			/obj/item/toy/blink,
-			/obj/item/toy/crossbow,
-			/obj/item/toy/ammo/crossbow,
+			/obj/item/gun/projectile/foamcrossbow,
+			/obj/item/ammo_casing/crossbow/foam/prespawned,
 			/obj/item/toy/sword,
 			/obj/item/toy/katana,
 			/obj/item/toy/snappop,
@@ -107,7 +107,7 @@
 			/obj/item/storage/lunchbox = good_data("Lunchbox", list(1, 10), null),
 			/obj/item/storage/lunchbox/rainbow = good_data("Rainbow Lunchbox", list(1, 10), null),
 			/obj/item/storage/lunchbox/cat = good_data("Cat Lunchbox", list(1, 10), null),
-			/obj/item/contraband/poster
+			/obj/item/poster/random_eris
 		),
 		"IKEA crates" = list(
 		/obj/item/machinery_crate/crafting_station = custom_good_price(700),

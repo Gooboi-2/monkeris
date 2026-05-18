@@ -101,6 +101,8 @@ nanoui is used to open and update nano browser uis
 	add_common_assets()
 
 	var/datum/asset/nanoui = get_asset_datum(/datum/asset/simple/directories/nanoui)
+	if (!user?.client)
+		return
 	if (nanoui.send(user.client))
 		to_chat(user, span_warning("Currently sending <b>all</b> nanoui assets, please wait!"))
 		user.client.browse_queue_flush() // stall loading nanoui until assets actualy gets sent
@@ -129,6 +131,7 @@ nanoui is used to open and update nano browser uis
 	add_script("nano_base_callbacks.js") // The NanoBaseCallbacks JS, this is used to set up (before and after update) callbacks which are common to all UIs
 	add_script("nano_base_helpers.js") // The NanoBaseHelpers JS, this is used to set up template helpers which are common to all UIs
 	add_stylesheet("shared.css") // this CSS sheet is common to all UIs
+	add_stylesheet("excelsior.css") // this CSS sheet is common to excelsior UIs
 	add_stylesheet("tgui.css") // this CSS sheet is common to all UIs
 	add_stylesheet("icons.css") // this CSS sheet is common to all UIs
 
@@ -158,7 +161,7 @@ nanoui is used to open and update nano browser uis
   *
   * @return 1 if closed, null otherwise.
   */
-/datum/nanoui/proc/update_status(var/push_update = 0)
+/datum/nanoui/proc/update_status(push_update = 0)
 	var/atom/host = src_object && src_object.nano_host(TRUE)
 	if(!host)
 		close()
@@ -210,6 +213,7 @@ nanoui is used to open and update nano browser uis
 			"showMap" = show_map,
 			"mapName" = GLOB.maps_data.path,
 			"mapZLevel" = map_z_level,
+			"stationMapURL" = SSassets.transport.get_asset_url(SANITIZE_FILENAME("[GLOB.maps_data.path]-[map_z_level].png")),
 			"mapZLevels" = GLOB.maps_data.station_levels,
 			"user" = list("name" = user.name)
 		)
@@ -222,7 +226,7 @@ nanoui is used to open and update nano browser uis
   *
   * @return /list data to send to the ui
   */
-/datum/nanoui/proc/get_send_data(var/list/data)
+/datum/nanoui/proc/get_send_data(list/data)
 	var/list/config_data = get_config_data()
 
 	var/list/send_data = list("config" = config_data)
@@ -232,7 +236,7 @@ nanoui is used to open and update nano browser uis
 
 		var/list/potential_catalog_data = list()
 		for(var/type in types)
-			var/datum/catalog_entry/E = get_catalog_entry(type)
+			var/datum/catalog_entry/E = SScwj.get_catalog_entry(type)
 			if(E)
 				potential_catalog_data.Add(list(list("entry_name" = E.title, "entry_img_path" = E.image_path, "entry_type" = E.thing_type)))
 
@@ -393,7 +397,7 @@ nanoui is used to open and update nano browser uis
 	initial_data_json = strip_improper(initial_data_json);
 
 	var/url_parameters_json = json_encode(list("src" = "\ref[src]"))
-	
+
 	// This prevents the so-called white screens
 	spawn(1)
 		retrieving_html = FALSE
@@ -465,6 +469,8 @@ nanoui is used to open and update nano browser uis
   * @return nothing
   */
 /datum/nanoui/proc/focus()
+	if (!user || !user.client)
+		return
 	winset(user, window_id, "focus=true")
 	winset(user, "mapwindow.map", "focus=true") // return keyboard focus to map
 
@@ -589,5 +595,5 @@ nanoui is used to open and update nano browser uis
   *
   * @return nothing
   */
-/datum/nanoui/proc/update(var/force_open = 0)
+/datum/nanoui/proc/update(force_open = 0)
 	src_object.nano_ui_interact(user, ui_key, src, force_open, master_ui, state)

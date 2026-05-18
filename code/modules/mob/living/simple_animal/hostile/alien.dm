@@ -5,11 +5,12 @@
 	icon_state = "alienh_running"
 	icon_dead = "alien_l"
 	icon_gib = "syndicate_gib"
+	bubble_icon = "alien"
 	response_help = "pokes"
 	response_disarm = "shoves"
 	response_harm = "hits"
 	speed = -1
-	meat_type = /obj/item/reagent_containers/food/snacks/meat/xenomeat
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/xenomeat = list(3, BUTCHER_DIFFICULT))
 	maxHealth = 100
 	health = 100
 	harm_intent_damage = 5
@@ -85,4 +86,4 @@
 /mob/living/simple_animal/hostile/alien/death()
 	..()
 	visible_message("[src] lets out a waning guttural screech, green blood bubbling from its maw...")
-	playsound(src, 'sound/voice/hiss6.ogg', 100, 1)
+	playsound(src, 'sound/voice/hiss6.ogg', 100, TRUE)

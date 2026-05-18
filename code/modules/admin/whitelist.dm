@@ -1,27 +1,27 @@
-#define WHITELISTFILE "data/whitelist.txt"
+#define WHITELISTFILE "[global.config.directory]/whitelist.txt"
 
-GLOBAL_LIST_EMPTY(whitelist)
-
-/hook/startup/proc/loadWhitelist()
-	if(config.usewhitelist)
-		load_whitelist()
-	return 1
+GLOBAL_LIST_INIT(whitelist, list())
 
 /proc/load_whitelist()
-	GLOB.whitelist = list()
+	GLOB.whitelist.Cut()
+	if(!rustg_file_exists(WHITELISTFILE))
+		log_world("Whitelist file not found: [WHITELISTFILE]")
+		message_admins("Whitelist file not found: [WHITELISTFILE]")
+		return
+
 	for(var/line in world.file2list(WHITELISTFILE))
 		if(!line)
 			continue
-		if(findtextEx(line,"#",1,2))
+		if(startsWith(line,"#"))
 			continue
 		GLOB.whitelist += ckey(line)
 
 	if(!GLOB.whitelist.len)
 		GLOB.whitelist = null
 
-/proc/check_whitelist(ckey)
+/proc/check_whitelist(_ckey)
 	if(!GLOB.whitelist)
 		return FALSE
-	. = (ckey in GLOB.whitelist)
+	. = (ckey(_ckey) in GLOB.whitelist)
 
 #undef WHITELISTFILE

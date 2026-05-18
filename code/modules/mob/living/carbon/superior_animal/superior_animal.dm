@@ -13,6 +13,9 @@
 	// AI activation for players is handled in sanity , if it has sanity damage it activates AI.
 	sanity_damage = 0.5
 
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/roachmeat = list(3, BUTCHER_NORMAL))
+	butchery_hazard = TRUE
+
 	var/icon_living
 	var/icon_dead
 	var/icon_rest //resting/unconscious animation
@@ -55,9 +58,6 @@
 	var/attack_sound_chance = 33
 	var/attack_sound_volume = 20
 
-	var/meat_type = /obj/item/reagent_containers/food/snacks/meat/roachmeat
-	var/meat_amount = 3
-
 	var/melee_damage_lower = 0
 	var/melee_damage_upper = 10
 	var/melee_sharp = FALSE //whether mob attacks have sharp property
@@ -96,9 +96,12 @@
 	var/ranged_cooldown
 	var/fire_verb //what does it do when it shoots?
 	var/kept_distance //how far away will it be before it stops moving closer
+	var/retreat_on_too_close = FALSE // if this is enabled avoid using very high kept_distance values, byond's pathfinding can get very upset if it can't get far enough away
 
 	var/grabbed_by_friend = FALSE //is this superior_animal being wrangled?
 	var/ticks_processed = 0
+
+	var/mob/living/grabbing // the currently grabbed mob
 
 	// Armor related datum
 	var/datum/armor/armor
@@ -119,7 +122,7 @@
 	pixel_x = RAND_DECIMAL(-randpixel, randpixel)
 	pixel_y = RAND_DECIMAL(-randpixel, randpixel)
 
-/mob/living/carbon/superior_animal/Initialize(var/mapload)
+/mob/living/carbon/superior_animal/Initialize(mapload)
 	if(islist(armor))
 		armor = getArmor(arglist(armor))
 	else if(!armor)
@@ -148,7 +151,7 @@
 	if(islist(message))
 		message = safepick(message)
 	if(message)
-		visible_message("<span class='name'>[src]</span> [message]")
+		visible_message("[span_name("[src]")] [message]", visible_message_flags = EMOTE_MESSAGE)
 
 /mob/living/carbon/superior_animal/update_icons()
 	. = ..()
@@ -228,6 +231,8 @@
 	else
 		canmove = TRUE
 		set_density(initial(density))
+	if(!lying && grabbing)
+		canmove = FALSE // don't move if we're grabbing someone
 
 /mob/living/carbon/superior_animal/proc/handle_ai()
 
@@ -255,12 +260,19 @@
 			set_glide_size(DELAY2GLIDESIZE(move_to_delay))
 			if(!kept_distance)
 				walk_to(src, target_mob, 1, move_to_delay)
-			else
+			else if (kept_distance && retreat_on_too_close && (get_dist(loc, target_mob.loc) < kept_distance))
+				walk_away(src,target_mob,kept_distance,move_to_delay) // warning: mobs will strafe nonstop if they can't get far enough away
+			else if(kept_distance)
 				step_to(src, target_mob, kept_distance)
 
 		if(HOSTILE_STANCE_ATTACKING)
 			if(destroy_surroundings)
 				destroySurroundings()
+
+			if(kept_distance && retreat_on_too_close && (get_dist(loc, target_mob.loc) < kept_distance))
+				walk_away(src,target_mob,kept_distance,move_to_delay) // warning: mobs will strafe nonstop if they can't get far enough away
+			else if(kept_distance)
+				step_to(src, target_mob, kept_distance)
 
 			prepareAttackOnTarget()
 
@@ -270,7 +282,7 @@
 			turns_since_move++
 			if(turns_since_move >= turns_per_move)
 				if(!(stop_automated_movement_when_pulled && pulledby))
-					var/moving_to = pick(cardinal)
+					var/moving_to = pick(GLOB.cardinal)
 					set_dir(moving_to)
 					step_glide(src, moving_to, DELAY2GLIDESIZE(0.5 SECONDS))
 					turns_since_move = 0
@@ -343,6 +355,8 @@
 		handle_cheap_environment(environment)
 		updateicon()
 		ticks_processed = 0
+	if(grabbing && !Adjacent(grabbing))
+		breakgrab()
 	if(handle_cheap_regular_status_updates()) // They have died after all of this, do not scan or do not handle AI anymore.
 		return PROCESS_KILL
 
@@ -374,3 +388,67 @@
 	if(istype(mover, /obj/item/projectile))
 		return stat ? TRUE : FALSE
 	. = ..()
+
+/mob/living/carbon/superior_animal/proc/commandchain(mob/potentialally)
+	if(faction != potentialally?.faction) // it isn't an ally?
+		if(isValidAttackTarget(potentialally)) // is it an enemy?
+			target_mob = potentialally // THEN KILL IT!
+			stance = HOSTILE_STANCE_ATTACK
+	else
+		return TRUE
+/mob/living/carbon/superior_animal/death()
+	breakgrab()
+	. = ..()
+
+/mob/living/carbon/superior_animal/proc/simplegrab(mob/living/target) // superior animals won't do this naturally, but this proc makes it easy to implement such behaviour in specific mobs
+	if(!target && target_mob)
+		target = target_mob // if no target was specified, but we have a target, default to them
+	else if(!target || !Adjacent(target))
+		return
+
+	visible_message(span_warning("[src] grabs [target]!"))
+	target.grabbed_by += src
+	grabbing = target
+	cheap_update_lying_buckled_and_verb_status_()
+
+
+/mob/living/carbon/superior_animal/proc/breakgrab()
+	if(grabbing)
+		grabbing.grabbed_by -= src
+		grabbing = null
+		cheap_update_lying_buckled_and_verb_status_()
+
+//generic gore spray butchering fail, only for superior mobs for now
+/mob/living/carbon/superior_animal/butchery_fail(mob/living/butcher)
+	var/mob/living/carbon/carbonbutcher
+	if(iscarbon(butcher))
+		carbonbutcher = butcher
+		//no repeat message for mouth if eyes are hit
+		var/message_sent = FALSE
+		var/mouth_protection = carbonbutcher.find_skin_protection(FACE)
+		var/eye_protection = carbonbutcher.find_skin_protection(EYES)
+
+		//get the reagent to poison people with if they fail
+		var/reagent_id = isroach(src) ? "blattedin" : null
+		if(isspider(src))
+			reagent_id = astype(src, /mob/living/carbon/superior_animal/giant_spider)?.poison_type
+
+		gibs(butcher.loc, null, /obj/effect/gibspawner/generic, fleshcolor, bloodcolor)//splatter_cache
+
+		if(!eye_protection)
+			butcher.visible_message(span_danger("[butcher] is blinded by a spray of gore from the \the [src]!"), span_userdanger("You are blinded by a spray of gore from \the [src]! [!mouth_protection ? "Some of the muck gets in your mouth!" : null]"))
+			message_sent = TRUE
+			butcher.eye_blurry = max(butcher.eye_blurry, 25)
+			butcher.eye_blind = max(butcher.eye_blind, 10)
+			if(reagent_id)
+				butcher.reagents.add_reagent(reagent_id, rand(3, 8))
+
+		else if(!mouth_protection)
+			butcher.custom_emote(2, "[pick("coughs!","splutters!", "retches.")]")//yuckers
+			if(!message_sent)
+				butcher.visible_message(span_danger("[butcher] is sprayed in the face with gore from the \the [src]!"), span_userdanger("You are sprayed with gore by \the [src]! Some of the muck gets in your mouth!"))
+			if(reagent_id)
+				butcher.reagents.add_reagent(reagent_id, rand(5, 10))
+
+		else
+			butcher.visible_message(span_danger("[butcher] is sprayed by gore from the \the [src]!"), span_danger("You sprayed with gore from \the [src]! Your [mouth_protection ? "mask shields" : "glasses shield"] you from the spray!"))

@@ -6,8 +6,21 @@
 	matter = list(MATERIAL_WOOD = 10)
 	density = TRUE
 
+/obj/structure/largecrate/Initialize(mapload)
+	..()
+	return mapload ? INITIALIZE_HINT_LATELOAD : INITIALIZE_HINT_NORMAL
+
+/obj/structure/largecrate/LateInitialize()
+	. = ..()
+
+	//stuff any items on tile into contents when initialized
+	var/obj/item/I
+	for(I in src.loc)
+		if(I.density || I.anchored || I == src) continue
+		I.forceMove(src)
+
 /obj/structure/largecrate/attack_hand(mob/user)
-	to_chat(user, SPAN_NOTICE("You need a crowbar to pry this open!"))
+	to_chat(user, span_notice("You need a crowbar to pry this open!"))
 	return
 
 /obj/structure/largecrate/attackby(obj/item/I, mob/user)
@@ -17,9 +30,9 @@
 			var/turf/T = get_turf(src)
 			for(var/atom/movable/AM in contents)
 				if(AM.simulated) AM.forceMove(T)
-			user.visible_message(SPAN_NOTICE("[user] pries \the [src] open."), \
-								 SPAN_NOTICE("You pry open \the [src]."), \
-								 SPAN_NOTICE("You hear splitting wood."))
+			user.visible_message(span_notice("[user] pries \the [src] open."), \
+								 span_notice("You pry open \the [src]."), \
+								 span_notice("You hear splitting wood."))
 			qdel(src)
 	else
 		return attack_hand(user)

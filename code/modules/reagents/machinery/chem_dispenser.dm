@@ -31,12 +31,12 @@
 		"sugar","sacid","tungsten"
 	)
 	var/list/tiered_reagents = list(
-		1 = list(),
-		2 = list("inaprovaline","anti_toxin","kelotane"), // basic upgrade
-		3 = list("tricordrazine","spaceacillin","dermaline"), // max moebius tech
-		4 = list("blattedin", "polystem"), // excel tech
-		5 = list("carpotoxin", "bicaridine"),// one-star
-		6 = list("meralyne", "nanites") // alien
+		list(),
+		list("inaprovaline","anti_toxin","kelotane"), // basic upgrade
+		list("tricordrazine","spaceacillin","dermaline"), // max moebius tech
+		list("blattedin", "polystem"), // excel tech
+		list("carpotoxin", "bicaridine"),// one-star
+		list("meralyne", "nanites") // alien
 	)
 	var/list/tiered_reagents_cost = list(
 		"inaprovaline" = 8,
@@ -84,7 +84,7 @@
 
 /obj/machinery/chemical_dispenser/Initialize()
 	. = ..()
-	dispensable_reagents = sortList(dispensable_reagents)
+	sortList(dispensable_reagents)
 
 /obj/machinery/chemical_dispenser/nano_ui_data()
 	var/list/data = list()
@@ -136,7 +136,7 @@
 
 /obj/machinery/chemical_dispenser/AltClick(mob/living/user)
 	if(user.incapacitated())
-		to_chat(user, SPAN_WARNING("You can't do that right now!"))
+		to_chat(user, span_warning("You can't do that right now!"))
 		return
 	if(!in_range(src, user))
 		return
@@ -187,7 +187,7 @@
 		user.unEquip(I, src)
 		I.add_fingerprint(user)
 		beaker = I
-		to_chat(user, SPAN_NOTICE("You add [I] to [src]."))
+		to_chat(user, span_notice("You add [I] to [src]."))
 		SSnano.update_uis(src) // update all UIs attached to src
 		return
 	. = ..()
@@ -205,7 +205,7 @@
 		return
 	if(istype(B, /obj/item/reagent_containers/glass) || istype(B, /obj/item/reagent_containers/food))
 		if(accept_beaker && istype(B, /obj/item/reagent_containers/food))
-			to_chat(user, SPAN_NOTICE("This machine only accepts beakers"))
+			to_chat(user, span_notice("This machine only accepts beakers"))
 		src.beaker =  B
 		if (user.unEquip(B, src))
 			to_chat(user, "You set [B] on the machine.")

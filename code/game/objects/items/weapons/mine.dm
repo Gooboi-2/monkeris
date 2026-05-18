@@ -90,21 +90,21 @@
 
 /obj/item/mine/attack_self(mob/user)
 	if(locate(/obj/structure/multiz/ladder) in get_turf(user))
-		to_chat(user, SPAN_NOTICE("You cannot place \the [src] here, there is a ladder."))
+		to_chat(user, span_notice("You cannot place \the [src] here, there is a ladder."))
 		return
 	if(locate(/obj/structure/multiz/stairs) in get_turf(user))
-		to_chat(user, SPAN_NOTICE("You cannot place \the [src] here, it needs a flat surface."))
+		to_chat(user, span_notice("You cannot place \the [src] here, it needs a flat surface."))
 		return
 	if(!armed)
 		user.visible_message(
-			SPAN_DANGER("[user] starts to deploy \the [src]."),
-			SPAN_DANGER("You begin deploying \the [src]!")
+			span_danger("[user] starts to deploy \the [src]."),
+			span_danger("You begin deploying \the [src]!")
 			)
 
 		if (do_after(user, 25))
 			user.visible_message(
-				SPAN_DANGER("[user] has deployed \the [src]."),
-				SPAN_DANGER("You have deployed \the [src]!")
+				span_danger("[user] has deployed \the [src]."),
+				span_danger("You have deployed \the [src]!")
 				)
 
 			deployed = TRUE
@@ -121,7 +121,7 @@
 		for(var/datum/antagonist/A in user.mind.antagonist)
 			if(A.id == ROLE_EXCELSIOR_REV && deployed)
 				user.visible_message(
-					SPAN_NOTICE("You summon up Excelsior's collective training and carefully deactivate the mine for transport.")
+					span_notice("You summon up Excelsior's collective training and carefully deactivate the mine for transport.")
 					)
 				deployed = FALSE
 				anchored = FALSE
@@ -131,7 +131,7 @@
 	if (deployed)
 		if(pulse_difficulty == FAILCHANCE_ZERO)
 			user.visible_message(
-					SPAN_NOTICE("You carefully disarm the [src].")
+					span_notice("You carefully disarm the [src].")
 					)
 			deployed = FALSE
 			anchored = FALSE
@@ -140,21 +140,21 @@
 			return
 		else
 			user.visible_message(
-					SPAN_DANGER("[user] extends its hand to reach \the [src]!"),
-					SPAN_DANGER("You extend your arms to pick it up, knowing that it will likely blow up when you touch it!")
+					span_danger("[user] extends its hand to reach \the [src]!"),
+					span_danger("You extend your arms to pick it up, knowing that it will likely blow up when you touch it!")
 					)
 			if (do_after(user, 5))
 				if(prob(prob_explode))
 					user.visible_message(
-						SPAN_DANGER("[user] attempts to pick up \the [src] only to hear a beep as it explodes in \his hands!"),
-						SPAN_DANGER("You attempt to pick up \the [src] only to hear a beep as it explodes in your hands!")
+						span_danger("[user] attempts to pick up \the [src] only to hear a beep as it explodes in \his hands!"),
+						span_danger("You attempt to pick up \the [src] only to hear a beep as it explodes in your hands!")
 						)
 					explode()
 					return
 				else
 					user.visible_message(
-						SPAN_DANGER("[user] picks up \the [src], which miraculously doesn't explode!"),
-						SPAN_DANGER("You pick up \the [src], which miraculously doesn't explode!")
+						span_danger("[user] picks up \the [src], which miraculously doesn't explode!"),
+						span_danger("You pick up \the [src], which miraculously doesn't explode!")
 					)
 					deployed = FALSE
 					anchored = FALSE
@@ -168,13 +168,13 @@
 
 		if (deployed)
 			user.visible_message(
-			SPAN_DANGER("[user] starts to carefully disarm \the [src]."),
-			SPAN_DANGER("You begin to carefully disarm \the [src].")
+			span_danger("[user] starts to carefully disarm \the [src]."),
+			span_danger("You begin to carefully disarm \the [src].")
 			)
 		if(I.use_tool(user, src, WORKTIME_NORMAL, QUALITY_PULSING, pulse_difficulty,  required_stat = STAT_COG)) //disarming a mine with a multitool should be for smarties
 			user.visible_message(
-				SPAN_DANGER("[user] has disarmed \the [src]."),
-				SPAN_DANGER("You have disarmed \the [src]!")
+				span_danger("[user] has disarmed \the [src]."),
+				span_danger("You have disarmed \the [src]!")
 				)
 			deployed = FALSE
 			anchored = FALSE
@@ -184,8 +184,8 @@
 	else
 		if (deployed)   //now touching it with stuff that don't pulse will also be a bad idea
 			user.visible_message(
-				SPAN_DANGER("\The [src] is hit with [I] and it explodes!"),
-				SPAN_DANGER("You hit \the [src] with [I] and it explodes!"))
+				span_danger("\The [src] is hit with [I] and it explodes!"),
+				span_danger("You hit \the [src] with [I] and it explodes!"))
 			explode()
 		return
 
@@ -193,10 +193,10 @@
 /obj/item/mine/Crossed(mob/AM)
 	if (armed)
 		if(locate(/obj/structure/multiz/ladder) in get_turf(loc))
-			visible_message(SPAN_DANGER("\The [src]'s triggering mechanism is disrupted by the ladder and does not go off."))
+			visible_message(span_danger("\The [src]'s triggering mechanism is disrupted by the ladder and does not go off."))
 			return
 		if(locate(/obj/structure/multiz/stairs) in get_turf(loc))
-			visible_message(SPAN_DANGER("\The [src]'s triggering mechanism is disrupted by the slope and does not go off."))
+			visible_message(span_danger("\The [src]'s triggering mechanism is disrupted by the slope and does not go off."))
 			return ..()
 		if(isliving(AM))
 
@@ -230,15 +230,241 @@
 
 	if (istype(I,/obj/item/device/assembly_holder))
 		if(detonator)
-			to_chat(user, SPAN_WARNING("There is another device in the way."))
+			to_chat(user, span_warning("There is another device in the way."))
 			return ..()
 
 		user.visible_message("\The [user] begins attaching [I] to \the [src].", "You begin attaching [I] to \the [src]")
 		if(do_after(user, 20, src))
-			user.visible_message("<span class='notice'>The [user] attach [I] to \the [src].", "\blue  You attach [I] to \the [src].</span>")
+			user.visible_message(span_notice("The [user] attach [I] to \the [src].", span_blue(" You attach [I] to \the [src].")))
 
 			detonator = I
 			user.unEquip(I,src)
 
 	return ..()
 */
+
+// --------------------------------
+// Claymore Mines
+// --------------------------------
+
+/obj/item/mine/claymore
+	name = "Claymore mine"
+	icon_state = "claymore"
+	desc = "A directional anti-personnel mine fitted with an optical sensor trigger. A danger to anyone foolish or unaware enough to step in front of it. Disarmable with a Pulsing tool if you're skilled enough."
+	description_info = "A directional anti-personnel landmine with an optical sensor that projects forward in a cone pattern. The sensor range can be adjusted between 2 and 4 tiles using a Pulsing tool before deployment. The reinforced back casing means fragmentation only fires forward, making it significantly harder to disarm than a standard pressure mine."
+	description_antag = "Harder to disarm than its pressure equivalent on account of the reinforced casing. Come prepared or don't bother."
+	explosion_power = 250
+	explosion_falloff = 100
+	spawn_blacklisted = TRUE
+	var/list/tripwires = list()
+	fragment_type = /obj/item/projectile/bullet/pellet/fragment
+	var/facing_dir = null
+	var/tripwire_range = 2
+	matter = list(MATERIAL_STEEL = 35, MATERIAL_PLASTEEL = 5)
+	w_class = ITEM_SIZE_NORMAL
+	pulse_difficulty = FAILCHANCE_HARD
+
+
+/obj/item/mine/claymore/update_icon()
+	cut_overlays()
+	if(deployed)
+		icon_state = "claymore_dir"
+		dir = facing_dir
+	else
+		icon_state = "claymore"
+
+/obj/item/mine/claymore/attack_self(mob/user)
+	var/turf/center = get_turf(src)
+
+	for(var/i = 1 to tripwire_range)
+		var/turf/next = get_step(center, user.dir)
+
+		if(locate(/obj/structure/multiz/ladder) in next || locate(/obj/structure/multiz/stairs) in next)
+			to_chat(user, span_warning("There is no suitable surface ahead to extend the sensor."))
+			return
+
+		if(next.density)
+			to_chat(user, span_warning("Something is blocking the sensor path."))
+			return
+
+		for(var/atom/movable/A in next)
+			if(A.density)
+				to_chat(user, span_warning("Something is blocking the sensor path."))
+				return
+
+		center = next
+
+	facing_dir = user.dir
+	..()
+
+	if(!armed)
+		return
+
+	visible_message(span_danger("\The [src] emits a sharp click as its arming sequence initiates."))
+
+	var/turf/wire_center = center
+
+	spawn(50)
+		if(!src || !armed)
+			return
+
+		// Cross at wire_center — center, left, right
+		for(var/side_dir in list(0, turn(facing_dir, 90), turn(facing_dir, -90)))
+			var/turf/T_turf = side_dir ? get_step(wire_center, side_dir) : wire_center
+			if(!T_turf || T_turf.density)
+				continue
+			var/blocked = FALSE
+			for(var/atom/movable/A in T_turf)
+				if(A.density)
+					blocked = TRUE
+					break
+			if(blocked)
+				continue
+			var/obj/effect/mine_tripwire/T = new /obj/effect/mine_tripwire(T_turf)
+			T.linked_mine = src
+			tripwires += T
+
+		// Stem — from wire_center back towards mine, tripwire_range-1 times
+		var/turf/stem = wire_center
+		var/back_dir = turn(facing_dir, 180)
+		for(var/i = 1 to tripwire_range - 1)
+			stem = get_step(stem, back_dir)
+			if(!stem || stem == get_turf(src)) // don't place on mine tile
+				break
+			var/blocked = FALSE
+			for(var/atom/movable/A in stem)
+				if(A.density)
+					blocked = TRUE
+					break
+			if(blocked)
+				break
+			var/obj/effect/mine_tripwire/S = new /obj/effect/mine_tripwire(stem)
+			S.linked_mine = src
+			tripwires += S
+
+		visible_message(span_danger("\The [src]'s indicator light blinks red the sensor is now active."))
+
+/obj/item/mine/claymore/explode()
+	explosion(get_turf(src), explosion_power, explosion_falloff)
+
+	if(facing_dir)
+		var/turf/origin = get_step(src, turn(facing_dir, 180))
+		fragment_explosion_angled(get_turf(src), origin, fragment_type, num_fragments)
+	else
+		fragment_explosion(get_turf(src), spread_radius, fragment_type, num_fragments, null, damage_step)
+
+	if(src)
+		qdel(src)
+
+/obj/item/mine/claymore/Crossed(mob/AM)
+	if(armed)
+		if(isliving(AM))
+			var/true_prob_explode = prob_explode - AM.skill_to_evade_traps()
+
+			if(prob(true_prob_explode))
+				explode()
+
+			return
+
+	.= ..()
+
+/obj/item/mine/claymore/attackby(obj/item/I, mob/user)
+	if(QUALITY_PULSING in I.tool_qualities)
+		if(!deployed && !armed)
+			if(loc == user)
+				var/new_range = input(user, "Set tripwire range (2-4)", "Tripwire Range", tripwire_range) as num|null
+				if(new_range && new_range >= 2 && new_range <= 4)
+					tripwire_range = new_range
+					to_chat(user, span_notice("You set the tripwire range to [tripwire_range]."))
+					return
+				else if(new_range)
+					to_chat(user, span_warning("Range must be between 2 and 4."))
+					return
+			else
+				to_chat(user, span_warning("You must be holding the mine to adjust its range."))
+				return
+
+	..()
+
+	if(!armed && tripwires.len)
+		for(var/obj/effect/mine_tripwire/TW in tripwires)
+			qdel(TW)
+
+		tripwires.Cut()
+
+/obj/item/mine/claymore/attack_hand(mob/user)
+	..()
+
+	if(!armed && tripwires.len)
+		for(var/obj/effect/mine_tripwire/TW in tripwires)
+			qdel(TW)
+
+		tripwires.Cut()
+
+/obj/item/mine/claymore/Destroy()
+	for(var/obj/effect/mine_tripwire/TW in tripwires)
+		qdel(TW)
+
+	tripwires.Cut()
+	return ..()
+
+// --------------------------------
+// Tripwire Effect
+// --------------------------------
+
+/obj/effect/mine_tripwire
+	name = "tripwire"
+	anchored = TRUE
+	icon = 'icons/effects/alerts.dmi'
+	icon_state = "danger"
+	invisibility = INVISIBILITY_MAXIMUM
+	var/obj/item/mine/claymore/linked_mine
+
+/obj/effect/mine_tripwire/Initialize()
+	. = ..()
+	update_icon()
+
+/obj/effect/mine_tripwire/update_icon()
+	cut_overlays()
+
+
+/obj/effect/mine_tripwire/Destroy()
+	linked_mine = null
+	return ..()
+
+/obj/effect/mine_tripwire/Crossed(mob/AM)
+	if(!linked_mine || !linked_mine.armed)
+		qdel(src)
+		return
+
+	if(locate(/obj/structure/multiz/ladder) in get_turf(loc))
+		visible_message(span_danger("\The [linked_mine]'s triggering mechanism is disrupted by the ladder and does not go off."))
+		return
+
+	if(locate(/obj/structure/multiz/stairs) in get_turf(loc))
+		visible_message(span_danger("\The [linked_mine]'s triggering mechanism is disrupted by the slope and does not go off."))
+		return
+
+	if(!isliving(AM))
+		return
+
+	var/obj/item/mine/claymore/mine = linked_mine
+	qdel(src)
+	mine.explode()
+
+
+/obj/item/mine/claymore/ironhammer
+	name = "FS DM \"Moneta\""
+	desc = "A compact Frozen Star manufactured directional anti-personnel mine. The casing bears a Neohongo inscription 読め: FRONT TOWARDS BELLIGERENTS."
+	description_info = "The FS DM 'Moneta' is an aged design, first produced by Frozen Star in the closing years of the Corporate Wars and adopted by Ironhammer as a standard anti-infiltration measure. A reliable if unglamorous fixture of Ironhammer kit the reinforced back casing and hardened sensor housing make it notably more resistant to disarming than the pressure mine. Disarmable and configurable with a Pulsing tool."
+	description_antag = "Harder to disarm than its pressure equivalent on account of the reinforced casing. Come prepared or don't bother."
+	icon_state = "claymore_frozenstar"
+	matter_reagents = list("fuel" = 40)
+
+/obj/item/mine/claymore/ironhammer/update_icon()
+	cut_overlays()
+	if(deployed)
+		icon_state = "frozen_dir"
+		dir = facing_dir
+	else
+		icon_state = "claymore_frozenstar"

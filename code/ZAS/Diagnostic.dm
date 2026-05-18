@@ -11,13 +11,13 @@
 				to_chat(mob, "[g]: [mix.gas[g]]\n")
 	else
 		if(zone_debug_images)
-			for(var/zone in  zone_debug_images)
+			for(var/datum/zone in  zone_debug_images)
 				images -= zone_debug_images[zone]
 			zone_debug_images = null
 
 /client/var/list/zone_debug_images
 
-/client/proc/Test_ZAS_Connection(var/turf/T as turf)
+/client/proc/Test_ZAS_Connection(turf/T as turf)
 	set category = "Debug"
 	if(!istype(T))
 		return

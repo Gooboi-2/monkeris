@@ -7,7 +7,6 @@
 	icon_gib = "pine_1"
 	speak_chance = 0
 	turns_per_move = 5
-	meat_type = /obj/item/reagent_containers/food/snacks/meat/carp
 	response_help = "brushes"
 	response_disarm = "pushes"
 	response_harm = "hits"
@@ -47,7 +46,7 @@
 	if(istype(L))
 		if(prob(15))
 			L.Weaken(3)
-			L.visible_message(SPAN_DANGER("\the [src] knocks down \the [L]!"))
+			L.visible_message(span_danger("\the [src] knocks down \the [L]!"))
 
 /mob/living/simple_animal/hostile/tree/death()
 	..(null,"is hacked into pieces!")

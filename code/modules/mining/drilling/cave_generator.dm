@@ -5,8 +5,15 @@
 #define CAVE_CORRIDORS 10  // Number of corridors to guide cave generation
 #define CAVE_WALL_PROPORTION 70 // Proportion of wall in random noise generation
 #define CAVE_VWEIGHT 10 // Base mineral weight for choice of mineral vein
+#define CAVE_VEINS_MINIMUM 8
+#define CAVE_VEINS_MAXIMUM 20
+#define CAVE_VEINS_SIZE 2 //size factor for veins generated with RNG
+#define CAVE_VEINS_SIZE_FORCED 2 //size factor for veins forced to generate because RNG didn't generate any of that mineral type
 #define CAVE_COOLDOWN 5 MINUTES
 #define CAVE_COLLAPSE 3 MINUTES
+
+#define POI_SIZE_SMALL 1 //several of these smaller pois are allowed to spawn
+#define POI_SIZE_LARGE 2 //only one of these larger pois are allowed to spawn
 
 // Cave generator statuses
 #define CAVE_CLOSED 0
@@ -27,6 +34,10 @@
 #define CAVE_SILVER 8
 #define CAVE_GOLD 9
 #define CAVE_PLATINUM 10
+#define CAVE_HYDROGEN 11
+
+#define GOLEM_SPAWN_INTERVAL 15 // the spacing along each corridor that each golem squad will spawn
+#define GOLEM_SPAWN_SPACING 10 //squads WILL NOT spawn closer than this no matter what, even if corridors intersect or run too close.area
 
 //////////////////////////////
 // Generator used to handle underground caves
@@ -53,6 +64,18 @@
 	var/list/blacklist = list(/mob/observer,
 							/obj/machinery/nuclearbomb,
 							/obj/item/disk/nuclear)
+	var/list/golem_spawn_nodes = list()
+	var/list/datum/cave_difficulty_level/difficulties = list(
+		new /datum/cave_difficulty_level/beginner,
+		new /datum/cave_difficulty_level/novice,
+		new /datum/cave_difficulty_level/adept,
+		new /datum/cave_difficulty_level/experienced,
+		new /datum/cave_difficulty_level/expert,
+		new /datum/cave_difficulty_level/nightmare
+	)
+	var/datum/cave_difficulty_level/current_difficulty
+	var/list/veins_to_guarantee = list()
+	var/orecount = 0
 
 /obj/cave_generator/Initialize()
 	// Initialize and not New to ensure SSmapping.maploader has been created
@@ -64,6 +87,11 @@
 		pool_pois += new cave_poi_tmpl
 
 /obj/cave_generator/proc/generate_map(seismic_lvl = 1)
+
+	current_difficulty = difficulties[seismic_lvl]
+	golem_spawn_nodes = list()
+	SSmapping.cave_ore_count = 0
+
 	// Fill the map with random noise
 	random_fill_map()
 
@@ -105,7 +133,6 @@
 
 // Draw a few straight lines in the initial random noise to guide the generation
 /obj/cave_generator/proc/generate_corridors()
-
 	// Draw a vertical corridor from (CAVE_MARGIN, CAVE_SIZE/2) to (CAVE_SIZE/2, CAVE_SIZE/2)
 	// then recursively draw corridors that branches out from it
 	draw_recursive_corridor(CAVE_MARGIN, CAVE_SIZE/2, CAVE_SIZE/2, CAVE_SIZE/2, CAVE_CORRIDORS/2)
@@ -117,8 +144,12 @@
 
 	// Draw a 2-wide corridor
 	for(var/i = x0 to x1 + 1)
+		if((y0 == y1) && ((i % GOLEM_SPAWN_SPACING) == 0) && check_spawn_overlap(locate(x + i,y + y0,z), golem_spawn_nodes))
+			golem_spawn_nodes |= locate(x + i,y + y0,z) //i would use lists of x,y (like the rest of the generation code) but neither the | or the in operators work with nested lists so turfs it is
 		for(var/j = y0 to y1 + 1)
 			map[i][j] = CAVE_FREE
+			if((x0 == x1) && ((j % GOLEM_SPAWN_SPACING) == 0) && check_spawn_overlap(locate(x + x0,y + j,z), golem_spawn_nodes))
+				golem_spawn_nodes |= locate(x + x0,y + j,z)
 
 	// If this is the last corridor
 	if(N == 0)
@@ -178,15 +209,29 @@
 	pois_placed = list()
 	pois_placed_pos = list()
 
-	// Get pool of points of interest for current seismic level
-	var/list/datum/map_template/cave_pois/pool = list()
+	// Get pools of points of interest for current seismic_lvl
+	var/list/datum/map_template/cave_pois/small_pool = list()
+	var/list/datum/map_template/cave_pois/big_pool = list()
 	for(var/datum/map_template/cave_pois/cave_poi_tmpl in pool_pois)
-		if(cave_poi_tmpl.min_seismic_lvl >= seismic_lvl)
-			pool += cave_poi_tmpl.type
-			pool[cave_poi_tmpl.type] = cave_poi_tmpl.spawn_prob
+		if(cave_poi_tmpl.min_seismic_lvl <= seismic_lvl && cave_poi_tmpl.max_seismic_lvl >= seismic_lvl)
+			if(cave_poi_tmpl.size == POI_SIZE_LARGE)
+				big_pool += cave_poi_tmpl.type
+				big_pool[cave_poi_tmpl.type] = cave_poi_tmpl.spawn_prob
+			else
+				small_pool += cave_poi_tmpl.type
+				small_pool[cave_poi_tmpl.type] = cave_poi_tmpl.spawn_prob
 
-	// Place a few pois on the map
-	var/N_pois = rand(2, 4)
+	var/N_pois_small = rand(3, 4)
+	var/N_pois_large = 1
+	if(seismic_lvl <= 3)//lower levels only get a few pois
+		N_pois_small = rand(2, 3)
+		N_pois_large = rand(0, 1)
+	generate_pool_pois(N_pois_small, small_pool)// Place a few pois on the map
+	if(N_pois_large)
+		generate_pool_pois(N_pois_large, big_pool)
+
+//generates pois for a specific pool
+/obj/cave_generator/proc/generate_pool_pois(N_pois, var/list/pool)
 	for(var/i = 1 to N_pois)
 		var/poi_path = pickweight_n_take(pool)
 		var/datum/map_template/cave_pois/poi = new poi_path()
@@ -237,15 +282,29 @@
 
 // Generate mineral veins once cave layout has been decided
 /obj/cave_generator/proc/generate_mineral_veins(seismic_lvl)
+
+	veins_to_guarantee = list(/datum/cave_vein/carbon, //if these veins don't get spawned by RNG, force mini-veins to spawn
+							/datum/cave_vein/iron,
+							/datum/cave_vein/plasma,
+							/datum/cave_vein/silver,
+							/datum/cave_vein/gold,
+							/datum/cave_vein/uranium,
+							/datum/cave_vein/diamond,
+							/datum/cave_vein/platinum)
 	var/x_vein = 0
 	var/y_vein = 0
-	var/N_veins = rand(15, 20 * (1 + 0.5 * (seismic_lvl - SEISMIC_MIN) / (SEISMIC_MAX - SEISMIC_MIN)))
+	var/N_veins = rand(20, 35)
 	var/N_trials = 50
 	while(N_veins > 0 && N_trials > 0)
 		N_trials--
 		x_vein = rand(CAVE_MARGIN, CAVE_SIZE - CAVE_MARGIN)
 		y_vein = rand(CAVE_MARGIN, CAVE_SIZE - CAVE_MARGIN)
-		N_veins -= place_mineral_vein(x_vein, y_vein, seismic_lvl)
+		N_veins -= place_mineral_vein(x_vein, y_vein, seismic_lvl, CAVE_VEINS_SIZE)
+
+	for(var/datum/cave_vein/forcedvein in veins_to_guarantee)
+		x_vein = rand(CAVE_MARGIN, CAVE_SIZE - CAVE_MARGIN)
+		y_vein = rand(CAVE_MARGIN, CAVE_SIZE - CAVE_MARGIN)
+		N_veins -= place_mineral_vein(x_vein, y_vein, seismic_lvl, CAVE_VEINS_SIZE_FORCED, forcedvein)
 
 // Find a free spot in the cave
 /obj/cave_generator/proc/find_free_spot(x_start, y_start, x_margin = 0, y_margin = 0)
@@ -317,7 +376,7 @@
 	status = CAVE_GENERATING
 
 	spawn(0)
-		// Generate the map for the given seismic level
+		// Generate the map for the given seismic_lvl
 		generate_map(seismic_lvl)
 
 		// Place the up ladder on a free spot in the cave
@@ -372,13 +431,13 @@
 	if(first_warning)
 		for(var/mob/living/M in SSmobs.mob_living_by_zlevel[z])
 			if(ishuman(M) && (M.x > x) && (M.x < x + CAVE_SIZE) && (M.y > y) && (M.y < y + CAVE_SIZE))
-				to_chat(M, SPAN_WARNING("WARNING: Cave collapse protocol has been engaged. \
+				to_chat(M, span_warning("WARNING: Cave collapse protocol has been engaged. \
 										The cave will collapse in T-[minutes_remaining] minutes. \
 										Miners, evacuate as many precious minerals as possible!"))
 	else
 		for(var/mob/living/M in SSmobs.mob_living_by_zlevel[z])
 			if(ishuman(M) && (M.x > x) && (M.x < x + CAVE_SIZE) && (M.y > y) && (M.y < y + CAVE_SIZE))
-				to_chat(M, SPAN_WARNING("WARNING: Cave collapse in T-[minutes_remaining] minutes. Remember, the Guild is counting on this haul!"))
+				to_chat(M, span_warning("WARNING: Cave collapse in T-[minutes_remaining] minutes. Remember, the Guild is counting on this haul!"))
 
 	// Call again in 30 seconds
 	if(cave_collapse_time - world.time > 45 SECONDS)
@@ -417,7 +476,7 @@
 		QDEL_NULL(ladder_up)
 
 // Place a mineral vein starting at the designated spot
-/obj/cave_generator/proc/place_mineral_vein(x_start, y_start, seismic_lvl)
+/obj/cave_generator/proc/place_mineral_vein(x_start, y_start, seismic_lvl, sizemult = 1, vein_path)
 
 	// Find closest available spot (wall tile near a free tile)
 	var/search_for = map[x_start][y_start] == CAVE_FREE ? CAVE_WALL : CAVE_FREE
@@ -461,23 +520,21 @@
 
 	// Choose which kind of mineral should the vein be made of
 	// Multiplier scale from 0 to 1
-	// Carbon and iron always have same probability
-	// Plasma, silver, gold scale up until medium seismic level
-	// Uranium, diamond and platinum scale up until max seismic level
-	var/seismic_mult = (seismic_lvl - SEISMIC_MIN) / (SEISMIC_MAX - SEISMIC_MIN)
-	var/list/datum/cave_vein/cave_veins = list(/datum/cave_vein/carbon = CAVE_VWEIGHT,
-											/datum/cave_vein/iron = CAVE_VWEIGHT,
-											/datum/cave_vein/plasma = CAVE_VWEIGHT * min(1, 2 * seismic_mult),
-											/datum/cave_vein/silver = CAVE_VWEIGHT * min(1, 2 * seismic_mult),
-											/datum/cave_vein/gold = CAVE_VWEIGHT * min(1, 2 * seismic_mult),
-											/datum/cave_vein/uranium = CAVE_VWEIGHT * seismic_mult,
-											/datum/cave_vein/diamond = CAVE_VWEIGHT * seismic_mult,
-											/datum/cave_vein/platinum = CAVE_VWEIGHT * seismic_mult)
-	var/vein_path = pickweight(cave_veins)
+	var/list/datum/cave_vein/cave_veins = list(/datum/cave_vein/carbon = CAVE_VWEIGHT * 2,
+											/datum/cave_vein/iron = CAVE_VWEIGHT * 2,
+											/datum/cave_vein/plasma = CAVE_VWEIGHT,
+											/datum/cave_vein/silver = CAVE_VWEIGHT,
+											/datum/cave_vein/gold = CAVE_VWEIGHT,
+											/datum/cave_vein/uranium = CAVE_VWEIGHT,
+											/datum/cave_vein/diamond = CAVE_VWEIGHT * 0.75,
+											/datum/cave_vein/platinum = CAVE_VWEIGHT * 0.75,
+											/datum/cave_vein/hydrogen = (seismic_lvl == 6) ? (CAVE_VWEIGHT * 0.5) : 0)//only generate on max difficulty. super duper valuable.
+	vein_path ||= pickweight(cave_veins)
 	var/datum/cave_vein/CV = new vein_path()
+	veins_to_guarantee -= vein_path
 
 	// Place mineral vein at the available spot in a recursive manner
-	place_recursive_mineral(x_start, y_start, CV.p_spread, CV.size_max, CV.size_min, CV.mineral)
+	place_recursive_mineral(x_start, y_start, CV.p_spread, CEILING(CV.size_max * sizemult, 1), FLOOR(CV.size_min * sizemult, 1), CV.mineral)
 	return 1
 
 // Place a mineral vein in a recursive manner
@@ -526,7 +583,7 @@
 		else
 			A.forceMove(dump)
 			if(!isobserver(A))
-				log_and_message_admins("[A] has been moved to [admin_jump_link(dump, src)] to avoid deletion in cave collapse.")
+				log_and_message_admins("[A] has been moved to [ADMIN_JMP(dump)] to avoid deletion in cave collapse.")
 
 	// Clean up shards and rods created when girders and windows are deleted at previous step
 	cave_content = get_area_contents(/area/asteroid/cave)
@@ -566,6 +623,8 @@
 					turf_type = /turf/cave_mineral/gold
 				if(CAVE_PLATINUM)
 					turf_type = /turf/cave_mineral/platinum
+				if(CAVE_HYDROGEN)
+					turf_type = /turf/cave_mineral/hydrogen
 				else
 					turf_type = /turf/floor/asteroid/cave
 
@@ -574,7 +633,8 @@
 				T.ChangeTurf(turf_type)
 			if(istype(T, /turf/cave_mineral))
 				var/turf/cave_mineral/CM = T
-				CM.seismic_multiplier = seismic_lvl
+				CM.seismic_multiplier = current_difficulty.vein_ore_mult
+				SSmapping.cave_ore_count++
 
 // Spawn points of interest at their respective position
 /obj/cave_generator/proc/place_pois()
@@ -588,16 +648,28 @@
 // Spawn golems on free turfs depending on seismic level
 /obj/cave_generator/proc/place_golems(seismic_lvl)
 
-	var/golem_type
-	for(var/i = 1 to CAVE_SIZE)
-		for(var/j = 1 to CAVE_SIZE)
-			if(map[i][j] == CAVE_FREE && prob(2 + seismic_lvl))
-				if(prob(4 * seismic_lvl)) // Probability of special golem
-					golem_type = pick(GLOB.golems_special)
-				else
-					golem_type = pick(GLOB.golems_normal)
-				// Spawn golem at free location
-				new golem_type(get_turf(locate(x + i, y + j, z)))
+	for(var/turf/floor/asteroid/cave/spawnloc in golem_spawn_nodes) //filtering to only asteroid turfs avoids headaches with POIs and null locs that come from god knows where
+
+		var/list/mob/living/carbon/superior_animal/golem/golems_to_spawn = current_difficulty.get_golem_spawns()
+
+		var/potentialturfs = list()
+
+		for(var/turf/floor/asteroid/cave/potential_turf in range(1, spawnloc))
+			potentialturfs += potential_turf
+
+		if(potentialturfs)
+			for(var/golem in golems_to_spawn)
+				new golem(pick_mobless_turf_if_exists(potentialturfs), current_difficulty)
+
+//crude check if a point is within a given distance of any point in the given list
+/obj/cave_generator/proc/check_spawn_overlap(target_turf,list/pointlist)
+	if(!(target_turf && pointlist))
+		return FALSE
+
+	for(var/turf/t in pointlist)
+		if(get_dist_euclidian(target_turf, t) < GOLEM_SPAWN_SPACING)
+			return FALSE
+	return TRUE
 
 //////////////////////////////
 // Mineral veins for the cave generator
@@ -657,6 +729,12 @@
 	size_min = 4
 	size_max = 8
 
+/datum/cave_vein/hydrogen //valuable and scarce
+	name = "hydrogen vein"
+	mineral = CAVE_HYDROGEN
+	size_min = 3
+	size_max = 6
+
 //////////////////////////////
 // Ladders to enter and exit the cave
 //////////////////////////////
@@ -674,13 +752,13 @@
 
 /obj/structure/multiz/ladder/cave_hole/attackby(obj/item/I, mob/user)
 	if(!cave_gen || !((cave_gen.status == CAVE_OPENED) || (cave_gen.status == CAVE_COLLAPSING)))
-		to_chat(user, SPAN_NOTICE("The cave system is not opened yet."))
+		to_chat(user, span_notice("The cave system is not opened yet."))
 		return
 	. = ..()
 
-/obj/structure/multiz/ladder/cave_hole/attack_hand(var/mob/M)
+/obj/structure/multiz/ladder/cave_hole/attack_hand(mob/M)
 	if(!cave_gen || !((cave_gen.status == CAVE_OPENED) || (cave_gen.status == CAVE_COLLAPSING)))
-		to_chat(M, SPAN_NOTICE("The cave system is not opened yet."))
+		to_chat(M, span_notice("The cave system is not opened yet."))
 		return
 	. = ..()
 
@@ -693,6 +771,10 @@
 #undef CAVE_CORRIDORS
 #undef CAVE_WALL_PROPORTION
 #undef CAVE_VWEIGHT
+#undef CAVE_VEINS_MINIMUM
+#undef CAVE_VEINS_MAXIMUM
+#undef CAVE_VEINS_SIZE
+#undef CAVE_VEINS_SIZE_FORCED
 #undef CAVE_COOLDOWN
 #undef CAVE_COLLAPSE
 
@@ -715,3 +797,6 @@
 #undef CAVE_SILVER
 #undef CAVE_GOLD
 #undef CAVE_PLATINUM
+#undef CAVE_HYDROGEN
+
+#undef GOLEM_SPAWN_SPACING

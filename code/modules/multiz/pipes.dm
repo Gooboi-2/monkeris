@@ -48,7 +48,7 @@
 		if(SOUTHWEST)
 			initialize_directions = SOUTH
 
-/obj/machinery/atmospherics/pipe/zpipe/hide(var/i)
+/obj/machinery/atmospherics/pipe/zpipe/hide(i)
 	if(istype(loc, /turf))
 		invisibility = i ? 101 : 0
 	update_icon()
@@ -75,7 +75,7 @@
 	else return 1
 
 /obj/machinery/atmospherics/pipe/zpipe/proc/burst()
-	src.visible_message(SPAN_WARNING("\The [src] bursts!"));
+	src.visible_message(span_warning("\The [src] bursts!"));
 	playsound(src.loc, 'sound/effects/bang.ogg', 25, 1)
 	var/datum/effect/effect/system/smoke_spread/smoke = new
 	smoke.set_up(1,0, src.loc, 0)
@@ -131,7 +131,7 @@
 	normalize_dir()
 	var/node1_dir
 
-	for(var/direction in cardinal)
+	for(var/direction in GLOB.cardinal)
 		if(direction&initialize_directions)
 			if (!node1_dir)
 				node1_dir = direction
@@ -172,7 +172,7 @@
 	normalize_dir()
 	var/node1_dir
 
-	for(var/direction in cardinal)
+	for(var/direction in GLOB.cardinal)
 		if(direction&initialize_directions)
 			if (!node1_dir)
 				node1_dir = direction

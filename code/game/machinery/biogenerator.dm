@@ -1,6 +1,7 @@
 /obj/machinery/biogenerator
-	name = "Biogenerator"
-	desc = ""
+	name = "Tartarus NutriForge"
+	desc = "Foodmatter goes in, foodmatter comes out! Now with Real Food(tm) recipes!"
+	description_info = "Insert food scraps to generate points, which can be used to create various food items and reagents. Cooked meals can be inserted to duplicate it at cost to quality."
 	icon = 'icons/obj/biogenerator.dmi'
 	icon_state = "biogen-stand"
 	density = TRUE
@@ -17,31 +18,43 @@
 
 	var/list/recipes = list(
 		"Food",
-			list(name="Milk, 30u", cost=60, reagent="milk"),
 			list(name="Stick of butter", cost=60, path=/obj/item/reagent_containers/food/snacks/sliceable/butterstick),
 			list(name="Slab of meat", cost=50, path=/obj/item/reagent_containers/food/snacks/meat),
+			list(name="Raw meatball", cost=40, path=/obj/item/reagent_containers/food/snacks/rawmeatball),
 			list(name="Box of eggs", cost=200, path=/obj/item/storage/fancy/egg_box),
+			list(name="Dough", cost=60, path=/obj/item/reagent_containers/food/snacks/dough),
+			list(name="Spaghetti", cost=40, path=/obj/item/reagent_containers/food/snacks/spaghetti),
+			list(name="Chocolate bar", cost=40, path=/obj/item/reagent_containers/food/snacks/chocolatebar),
+
+		"Liquid Food",
+			list(name="Milk, 30u", cost=60, reagent="milk"),
+			list(name="Soy Milk 30u", cost=60, reagent="soymilk"),
+			list(name="Universal Enzyme, 30u", cost=75, reagent="enzyme"),
+			list(name="Flour, 30u", cost=60, reagent="flour"),
+			list(name="Sugar, 30u", cost=60, reagent="sugar"),
+			list(name="Salt, 30u", cost=60, reagent="sodiumchloride"),
+			list(name="Black Pepper, 30u", cost=60, reagent="blackpepper"),
+			list(name="Corn Oil, 30u", cost=60, reagent="cornoil"),
+			list(name="Soy Sauce, 30u", cost=60, reagent="soysauce"),
+			list(name="Ketchup, 30u", cost=60, reagent="ketchup"),
+			list(name="Hotsauce, 30u", cost=60, reagent="capsaicin"),
+			list(name="Coldsauce, 30u", cost=60, reagent="frostoil"),
+
+		"Junk Food",
+			list(name="LiquidFood Ration", cost=60, path=/obj/item/reagent_containers/food/snacks/liquidfood),
+			list(name="Bread Tube", cost=60, path=/obj/item/reagent_containers/food/snacks/tastybread),
+			list(name="Chips", cost=40, path=/obj/item/reagent_containers/food/snacks/chips),
+			list(name="Popcorn", cost=40, path=/obj/item/reagent_containers/food/snacks/popcorn),
+			list(name="Jerky", cost=60, path=/obj/item/reagent_containers/food/snacks/sosjerky),
+			list(name="Raisins", cost=40, path=/obj/item/reagent_containers/food/snacks/no_raisin),
+			list(name="Space Twinkie", cost=60, path=/obj/item/reagent_containers/food/snacks/spacetwinkie),
+			list(name="Cheesie Honkers", cost=60, path=/obj/item/reagent_containers/food/snacks/cheesiehonkers),
+
+
 		"Nutrient",
 			list(name="EZ-Nutrient, 30u", cost=30, reagent="eznutrient"),
 			list(name="Left4Zed, 30u", cost=60, reagent="left4zed"),
 			list(name="Robust Harvest, 30u", cost=75, reagent="robustharvest"),
-		"Leather",
-			list(name="Wallet", cost=100, path=/obj/item/storage/wallet),
-			list(name="Botanical gloves", cost=250, path=/obj/item/clothing/gloves/botanic_leather),
-			list(name="Utility belt", cost=300, path=/obj/item/storage/belt/utility),
-			list(name="Leather Satchel", cost=400, path=/obj/item/storage/backpack/satchel),
-			list(name="Leather jacket", cost=400, /obj/item/clothing/suit/storage/leather_jacket),
-			list(name="Cash Bag", cost=400, path=/obj/item/storage/bag/money),
-			list(name="Medical belt", cost=300, path=/obj/item/storage/belt/medical),
-			list(name="Tactical belt", cost=300, path=/obj/item/storage/belt/tactical),
-			list(name="EMT belt", cost=300, path=/obj/item/storage/belt/medical/emt),
-			list(name="Champion belt", cost=500, path=/obj/item/storage/belt/champion),
-		"Medicine",
-			list(name="Medical splints", cost=100, path=/obj/item/stack/medical/splint),
-			list(name="Roll of gauze", cost=100, path=/obj/item/stack/medical/bruise_pack),
-			list(name="Ointment", cost=100, path=/obj/item/stack/medical/ointment),
-			list(name="Advanced trauma kit", cost=200, path=/obj/item/stack/medical/advanced/bruise_pack),
-			list(name="Advanced burn kit", cost=200, path=/obj/item/stack/medical/advanced/ointment),
 	)
 
 
@@ -63,7 +76,7 @@
 		icon_state = "biogen-work"
 	return
 
-/obj/machinery/biogenerator/attackby(var/obj/item/I, var/mob/user)
+/obj/machinery/biogenerator/attackby(obj/item/I, mob/user)
 
 	if(default_deconstruction(I, user))
 		return
@@ -72,47 +85,47 @@
 		return
 	if(istype(I, /obj/item/reagent_containers/glass))
 		if(beaker)
-			to_chat(user, SPAN_NOTICE("The [src] is already loaded."))
+			to_chat(user, span_notice("The [src] is already loaded."))
 		else
 			user.remove_from_mob(I)
 			I.loc = src
 			beaker = I
 			updateUsrDialog()
 	else if(processing)
-		to_chat(user, SPAN_NOTICE("\The [src] is currently processing."))
+		to_chat(user, span_notice("\The [src] is currently processing."))
 	else if(istype(I, /obj/item/storage/bag/produce))
 		var/i = 0
 		for(var/obj/item/reagent_containers/food/snacks/grown/G in contents)
 			i++
 		if(i >= 10)
-			to_chat(user, SPAN_NOTICE("\The [src] is already full! Activate it."))
+			to_chat(user, span_notice("\The [src] is already full! Activate it."))
 		else
 			for(var/obj/item/reagent_containers/food/snacks/grown/G in I.contents)
 				G.loc = src
 				i++
 				if(i >= 10)
-					to_chat(user, SPAN_NOTICE("You fill \the [src] to its capacity."))
+					to_chat(user, span_notice("You fill \the [src] to its capacity."))
 					break
 			if(i < 10)
-				to_chat(user, SPAN_NOTICE("You empty \the [I] into \the [src]."))
+				to_chat(user, span_notice("You empty \the [I] into \the [src]."))
 
 
 	else if(!istype(I, /obj/item/reagent_containers/food/snacks/grown))
-		to_chat(user, SPAN_NOTICE("You cannot put this in \the [src]."))
+		to_chat(user, span_notice("You cannot put this in \the [src]."))
 	else
 		var/i = 0
 		for(var/obj/item/reagent_containers/food/snacks/grown/G in contents)
 			i++
 		if(i >= 10)
-			to_chat(user, SPAN_NOTICE("\The [src] is full! Activate it."))
+			to_chat(user, span_notice("\The [src] is full! Activate it."))
 		else
 			user.remove_from_mob(I)
 			I.loc = src
-			to_chat(user, SPAN_NOTICE("You put \the [I] in \the [src]"))
+			to_chat(user, span_notice("You put \the [I] in \the [src]"))
 	update_icon()
 	return
 
-/obj/machinery/biogenerator/nano_ui_interact(var/mob/user, var/ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS, var/datum/nano_topic_state/state =GLOB.outside_state)
+/obj/machinery/biogenerator/nano_ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = NANOUI_FOCUS, datum/nano_topic_state/state =GLOB.outside_state)
 	user.set_machine(src)
 	var/list/data = list()
 	data["points"] = points
@@ -166,7 +179,7 @@
 	if (stat) //NOPOWER etc
 		return
 	if(processing)
-		to_chat(usr, SPAN_NOTICE("The biogenerator is in the process of working."))
+		to_chat(usr, span_notice("The biogenerator is in the process of working."))
 		return
 	var/S = 0
 	for(var/obj/item/reagent_containers/food/snacks/grown/I in contents)
@@ -188,7 +201,7 @@
 		menustat = "void"
 	return
 
-/obj/machinery/biogenerator/proc/create_product(var/item, var/amount)
+/obj/machinery/biogenerator/proc/create_product(item, amount)
 	var/list/recipe = null
 	if(processing)
 		return
@@ -209,7 +222,11 @@
 
 	if(cost > points)
 		menustat = "nopoints"
-		return 0
+		return FALSE
+
+	if(recipe["reagent"] && !beaker)
+		to_chat(usr, span_notice("You need to insert a beaker!"))
+		return FALSE
 
 	processing = 1
 	update_icon()
@@ -227,7 +244,7 @@
 	processing = 0
 	menustat = "complete"
 	update_icon()
-	return 1
+	return TRUE
 
 /obj/machinery/biogenerator/Topic(href, href_list)
 	if(stat & BROKEN) return

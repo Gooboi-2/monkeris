@@ -10,8 +10,7 @@
 
 	if(heavy_range > 1)
 		var/obj/effect/overlay/pulse/heatwave/HW = new(epicenter)
-		spawn(20)
-			qdel(HW)
+		QDEL_IN(HW, 20)
 
 	if(heavy_range > light_range)
 		light_range = heavy_range
@@ -34,7 +33,7 @@
 				burn_damage = damage * 0.5
 
 			if(burn_damage && L.stat == CONSCIOUS)
-				to_chat(L, SPAN_WARNING("You feel your skin boiling!"))
+				to_chat(L, span_warning("You feel your skin boiling!"))
 
 			var/organ_hit = BP_CHEST //Chest is hit first
 			var/loc_damage

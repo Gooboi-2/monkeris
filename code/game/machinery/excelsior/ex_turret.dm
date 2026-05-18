@@ -5,6 +5,7 @@
 /obj/machinery/porta_turret/excelsior
 	icon = 'icons/obj/machines/excelsior/turret.dmi'
 	desc = "A fully automated anti infantry platform. Fires .30 caliber rounds"
+	description_info = "Needs to be in the range of a working node to shoot."
 	icon_state = "turret_legs"
 	density = TRUE
 	lethal = TRUE
@@ -19,10 +20,11 @@
 	health = 300
 	shot_delay = 0
 	shipside_only = TRUE
+	var/obj/machinery/node/my_node
 
 /obj/machinery/porta_turret/excelsior/proc/has_power_source_nearby()
-	for (var/a in excelsior_teleporters)
-		if (dist3D(src, a) <= working_range) //The turret and teleporter can be on a different zlevel
+	if(my_node)				// we don't need one more runtime in this neighborhood
+		if(my_node.core)
 			return TRUE
 	return FALSE
 
@@ -30,12 +32,44 @@
 	if(get_dist(user, src) < 2)
 		extra_description += "There [(ammo == 1) ? "is" : "are"] [ammo] round\s left!"
 		if(!has_power_source_nearby())
-			extra_description += "\nSeems to be powered down. No excelsior teleporter found nearby."
+			extra_description += "\n<b>Seems to be powered down.</b> No active Excelsior node found nearby."
 	..(user, extra_description)
+
+
+
+
 
 /obj/machinery/porta_turret/excelsior/Initialize()
 	. = ..()
 	update_icon()
+	RegisterSignal(src, COMSIG_EX_CONNECT, PROC_REF(search_for_node))
+	search_for_node()
+
+
+
+
+
+/obj/machinery/porta_turret/excelsior/proc/search_for_node()
+	var/obj/machinery/node/closest
+	var/closest_dist = EX_NODE_DISTANCE + 1
+	for (var/obj/machinery/node/node in excelsior_nodes)
+		if(get_dist(src, node) < closest_dist)
+			closest = node
+			closest_dist = dist3D(src, closest)
+	if(closest)					// connected
+		closest.connect(src)
+		my_node = closest
+		update_icon()
+		return TRUE
+	else						// no connect :[
+		my_node = null
+		update_icon()
+		return FALSE
+
+
+
+
+
 
 /obj/machinery/porta_turret/excelsior/setup()
 	var/obj/item/ammo_casing/AM = initial(ammo_box.ammo_type)
@@ -49,7 +83,7 @@
 		return 0
 	return 1
 
-/obj/machinery/porta_turret/excelsior/nano_ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = NANOUI_FOCUS)
+/obj/machinery/porta_turret/excelsior/nano_ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = NANOUI_FOCUS)
 	var/data[0]
 	data["access"] = !isLocked(user)
 	data["locked"] = locked
@@ -68,7 +102,7 @@
 /obj/machinery/porta_turret/excelsior/attackby(obj/item/ammo_magazine/I, mob/user)
 	if(istype(I, ammo_box) && I.stored_ammo.len)
 		if(ammo >= ammo_max)
-			to_chat(user, SPAN_NOTICE("You cannot load more than [ammo_max] ammo."))
+			to_chat(user, span_notice("You cannot load more than [ammo_max] ammo."))
 			return
 
 		var/transfered_ammo = 0
@@ -79,9 +113,14 @@
 			transfered_ammo++
 			if(ammo == ammo_max)
 				break
-		to_chat(user, SPAN_NOTICE("You loaded [transfered_ammo] bullets into [src]. It now contains [ammo] ammo."))
+		to_chat(user, span_notice("You loaded [transfered_ammo] bullets into [src]. It now contains [ammo] ammo."))
 	else
 		..()
+
+
+
+
+
 
 /obj/machinery/porta_turret/excelsior/Process()
 	if(!has_power_source_nearby())
@@ -91,6 +130,11 @@
 	if(anchored)
 		disabled = FALSE
 	..()
+
+
+
+
+
 
 /obj/machinery/porta_turret/excelsior/assess_living(mob/living/L)
 	if(!istype(L))

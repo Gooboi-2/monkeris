@@ -11,8 +11,7 @@
 	speak_emote = list("purrs.", "meows.")
 	emote_see = list("shakes her head.", "shivers.")
 	speak_chance = 0.75
-	meat_amount = 6
-	meat_type = /obj/item/reagent_containers/food/snacks/meat
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat/cat/iriska = list(6, BUTCHER_EASY))
 	response_help = "pets"
 	response_disarm = "rubs"
 	response_harm = "makes terrible mistake by kicking"
@@ -119,7 +118,7 @@ var/list/despised = list()
 				assert_dominance(M)
 	return
 
-/mob/living/simple_animal/iriska/proc/assert_dominance(var/mob/target_mob)
+/mob/living/simple_animal/iriska/proc/assert_dominance(mob/target_mob)
 	if(prob(15)) say("HSSSSS")
 	if(!Adjacent(target_mob))
 		return
@@ -144,7 +143,7 @@ var/list/despised = list()
 			visible_emote("looks at [M] approvingly.")
 			tolerated += M.real_name
 
-/mob/living/simple_animal/iriska/attackby(var/obj/item/O, var/mob/user)
+/mob/living/simple_animal/iriska/attackby(obj/item/O, mob/user)
 	. = ..()
 	if(O.force)
 		despise(user)
@@ -156,7 +155,7 @@ var/list/despised = list()
 	if((M.a_intent == I_HELP) && (M in tolerated))
 		if(prob(15)) say("PRRRR")
 
-/mob/living/simple_animal/iriska/bullet_act(var/obj/item/projectile/proj)
+/mob/living/simple_animal/iriska/bullet_act(obj/item/projectile/proj)
 	. = ..()
 	despise(proj.firer)
 
@@ -182,4 +181,4 @@ var/list/despised = list()
 			H.max_style = MIN_HUMAN_STYLE
 			for(var/stat in ALL_STATS)
 				H.stats.changeStat(stat, -10)
-			to_chat(H, SPAN_DANGER("The shadows seem to lengthen, the walls are closing in. The ship itself wants you dead."))
+			to_chat(H, span_danger("The shadows seem to lengthen, the walls are closing in. The ship itself wants you dead."))

@@ -4,16 +4,11 @@
 	icon_state = "x2"
 	invisibility = 101
 	var/wall_dir = NORTH
-	var/spawnwall = TRUE
 
 /obj/crawler/crawler_wallmaker/New()
 	sleep(350)
 	var/turf/T = get_step(loc, wall_dir)
-	for(var/obj/crawler/crawler_wallmaker/found in T.contents)
-		if(found)
-			spawnwall = FALSE
-			break
-	if(spawnwall)
+	if(locate(/obj/crawler/crawler_wallmaker) in T.contents)
 		new /turf/wall(src.loc)
 
 /obj/crawler/crawler_wallmaker/west
@@ -94,7 +89,7 @@
 		var/area/crawler/A = loc.loc
 		A.room_controllers += src
 
-/obj/crawler/room_controller/proc/connect(var/obj/crawler/room_controller/neighbor)
+/obj/crawler/room_controller/proc/connect(obj/crawler/room_controller/neighbor)
 	var/rc_dir = get_dir(src, neighbor)
 	var/turf/T1
 	var/turf/T2

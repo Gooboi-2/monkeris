@@ -3,7 +3,6 @@
 	desc = "A hulking beast of green, congealed waste. It has an enlarged salivatory gland for lobbing projectiles."
 	icon_state = "radioactiveroach"
 
-	meat_amount = 3
 	turns_per_move = 1
 	maxHealth = 40
 	health = 40
@@ -32,7 +31,7 @@
 		rad = 100
 	)
 
-/mob/living/carbon/superior_animal/roach/toxic/UnarmedAttack(atom/A, var/proximity)
+/mob/living/carbon/superior_animal/roach/toxic/UnarmedAttack(atom/A, proximity)
 	. = ..()
 	if(prob(25))
 		if(isliving(A))
@@ -41,7 +40,7 @@
 			L.apply_effect(10, IRRADIATE)
 			L.damage_through_armor(damage, TOX, attack_flag = ARMOR_BIO)
 			playsound(src, 'sound/voice/insect_battle_screeching.ogg', 30, 1, -3)
-			L.visible_message(SPAN_DANGER("\the [src] globs up some glowing bile all over \the [L]!"))
+			L.visible_message(span_danger("\the [src] globs up some glowing bile all over \the [L]!"))
 
 /obj/item/projectile/roach_spit
 	name = "Glowing bile"
@@ -63,3 +62,18 @@
 	if (isroach(target_mob))
 		return FALSE // so these pass through roaches
 	..()
+
+/mob/living/carbon/superior_animal/roach/toxic/joinOvermind(datum/overmind/roachmind/jointhis)
+	jointhis.addRanged(src) // Gestrahlte is Ranged
+	overseer = jointhis
+
+/mob/living/carbon/superior_animal/roach/toxic/leaveOvermind()
+	overseer?.removeRanged(src) // Ranged Gestrahlte
+	overseer?.casualties.Remove(src)
+	overseer = null
+
+/mob/living/carbon/superior_animal/roach/toxic/butchery_fail(mob/living/butcher)
+	..()
+	for(var/num in rand(2,5))
+		var/obj/item/projectile/roach_spit/ourspit = new /obj/item/projectile/roach_spit(src.loc)
+		ourspit.launch(src.loc, pick(SOUTH, NORTH, WEST, EAST, SOUTHEAST, SOUTHWEST, NORTHEAST, NORTHWEST))

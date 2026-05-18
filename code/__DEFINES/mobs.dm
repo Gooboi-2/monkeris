@@ -147,6 +147,10 @@
 
 #define MOB_BASE_MAX_HUNGER 400
 
+//MINOR TWEAKS/MISC
+#define AGE_MIN 18 //youngest a character can be
+#define AGE_MAX 110 //oldest a character can be
+
 //Time of Death constants
 //Used with a list in preference datums to track times of death
 #define	CREW 	"crew"//Used for crewmembers, AI, cyborgs, nymphs, antags
@@ -194,10 +198,17 @@
 #define TASTE_DULL 0.5 //anything below 30%
 #define TASTE_NUMB 0.1 //anything below 150%
 
-//Health
-#define HEALTH_THRESHOLD_SOFTCRIT 0
-#define HEALTH_THRESHOLD_CRIT -50
-#define HEALTH_THRESHOLD_DEAD -100
+//Nutrition levels for humans
+#define NUTRITION_LEVEL_FAT 600
+#define NUTRITION_LEVEL_FULL 550
+#define NUTRITION_LEVEL_WELL_FED 450
+#define NUTRITION_LEVEL_FED 350
+#define NUTRITION_LEVEL_HUNGRY 250
+#define NUTRITION_LEVEL_STARVING 150
+
+#define NUTRITION_LEVEL_START_MIN 250
+#define NUTRITION_LEVEL_START_MAX 400
+
 
 #define ORGAN_HEALTH_MULTIPLIER 1
 #define ORGAN_REGENERATION_MULTIPLIER 0.2
@@ -216,9 +227,61 @@
 
 #define NECROZTIME 	(15 MINUTES)
 
-
+/// Checking flags for [/mob/proc/can_read()]
+#define READING_CHECK_LITERACY (1<<0)
+#define READING_CHECK_LIGHT (1<<1)
 
 //Surgery operation defines
 #define CAN_OPERATE_ALL 1 //All possible surgery types are available
 #define CAN_OPERATE_STANDING -1 //Only limited surgery types are available (gouging out shrapnel, for instance)
 
+
+GLOBAL_REAL_VAR(list/voice_type2sound = list(
+	"1" = list(
+		"1" = sound('goon/sound/speak_1.ogg'),
+		"!" = sound('goon/sound/speak_1_exclaim.ogg'),
+		"?" = sound('goon/sound/speak_1_ask.ogg')
+	),
+	"2" = list(
+		"2" = sound('goon/sound/speak_2.ogg'),
+		"!" = sound('goon/sound/speak_2_exclaim.ogg'),
+		"?" = sound('goon/sound/speak_2_ask.ogg')
+	),
+	"3" = list(
+		"3" = sound('goon/sound/speak_3.ogg'),
+		"!" = sound('goon/sound/speak_3_exclaim.ogg'),
+		"?" = sound('goon/sound/speak_3_ask.ogg')
+	),
+	"4" = list(
+		"4" = sound('goon/sound/speak_4.ogg'),
+		"!" = sound('goon/sound/speak_4_exclaim.ogg'),
+		"?" = sound('goon/sound/speak_4_ask.ogg')
+	),
+))
+
+///Managed global that is a reference to the real global
+GLOBAL_LIST_INIT(voice_type2sound_ref, voice_type2sound)
+
+//butchering defines
+//defines for base success chance
+#define BUTCHER_IMPOSSIBLE 5
+#define BUTCHER_VERY_HARD 10
+#define BUTCHER_HARD 25
+#define BUTCHER_CHALLENGING 35
+#define BUTCHER_DIFFICULT 45
+#define BUTCHER_NORMAL 55
+#define BUTCHER_EASY 65
+#define BUTCHER_VERY_EASY 80
+#define BUTCHER_EFFORTLESS 100//still technically possible to fail with terrible tool + 0 bio, so not 'zero'
+
+/**
+ * divisor for BIO effect on butchering
+ * values of bio above this will improve butchering chances, values below will dmg it
+ */
+#define BUTCHER_BIO_DIVISOR 25
+
+/**
+ * the base chance of a butchery going wrong and triggering a hazard effect
+ * increased by 10 each time you fail to extract an item
+ */
+#define BUTCHERING_HAZARD_CHANCE 5

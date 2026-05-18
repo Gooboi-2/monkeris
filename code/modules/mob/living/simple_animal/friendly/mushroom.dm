@@ -7,7 +7,7 @@
 	turns_per_move = 1
 	maxHealth = 5
 	health = 5
-	meat_type = /obj/item/reagent_containers/food/snacks/hugemushroomslice
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/hugemushroomslice = list(2, BUTCHER_NORMAL))
 	response_help  = "pets"
 	response_disarm = "gently pushes aside"
 	response_harm   = "whacks"
@@ -29,15 +29,15 @@
 	set src = usr
 
 	if(stat == 2)
-		to_chat(usr, SPAN_DANGER("You are dead; it is too late for that."))
+		to_chat(usr, span_danger("You are dead; it is too late for that."))
 		return
 
 	if(!seed)
-		to_chat(usr, SPAN_DANGER("You are sterile!"))
+		to_chat(usr, span_danger("You are sterile!"))
 		return
 
 	if(world.time < harvest_time + min_explode_time)
-		to_chat(usr, SPAN_DANGER("You are not mature enough for that."))
+		to_chat(usr, span_danger("You are not mature enough for that."))
 		return
 
 	spore_explode()

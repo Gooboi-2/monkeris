@@ -24,7 +24,10 @@
 	var/spit_target
 	var/spit_range = 2		// For var-edits
 	var/has_brain = FALSE
-
+	/// does this disgorger have sufficient heart efficiency?
+	var/has_heart = FALSE
+	/// does this disgorger have sufficient blood vessel efficiency?
+	var/has_blood = FALSE
 	// Production
 	var/grind_rate = 8				// How many ticks between each processed item
 	var/current_tick = 0
@@ -63,7 +66,6 @@
 	RefreshParts()
 
 /obj/machinery/reagentgrinder/industrial/disgorger/examine(mob/user, extra_description = "")
-	..()
 	var/accepted
 
 	if(accepted_objects?.len)
@@ -81,7 +83,8 @@
 
 	if(accepted)
 		accepted = copytext(accepted, 1, length(accepted) - 1)
-		extra_description += SPAN_NOTICE("\n<i>Accepts [accepted].</i>")
+		extra_description += span_notice("\n<i>Accepts [accepted].</i>")
+	..(user, extra_description)
 
 /obj/machinery/reagentgrinder/industrial/disgorger/proc/check_reagents(obj/item/I, mob/user)
 	if(!I.reagents || !I.reagents.total_volume)
@@ -136,8 +139,9 @@
 
 		for(var/obj/item/O in I.GetAllContents(2, TRUE))
 			amount_to_take += max(0, O.matter[MATERIAL_BIOMATTER])
-			var/obj/item/organ/organ = O
-			var/is_valid_organ = (organ && LAZYLEN(organ.transplant_data))
+			var/is_valid_organ = FALSE
+			if(istype(O, /obj/item/organ) && LAZYLEN(astype(O, /obj/item/organ).transplant_data))
+				is_valid_organ = TRUE
 			qdel(O)
 			if(amount_to_take)
 				biomatter_counter += round(amount_to_take / production_denominator, 0.01)
@@ -150,9 +154,12 @@
 
 /obj/machinery/reagentgrinder/industrial/disgorger/grind()
 	if(has_brain && prob(1))
-		if(prob(1))									// If I did my calc right, this should happen once every 2 hours
-			for(var/mob/O in hearers(src, null))
-				O.show_message("\icon[src] <b>\The [src]</b> says, \"You s-s-saved me... w-why?\"", 2)
+		if(prob(1))
+			// If I did my calc right, this should happen once every 2 hours
+			var/our_hearers = hearers(get_turf(src), null)
+			var/htmlicon = icon2html(src, our_hearers)
+			for(var/mob/O in our_hearers)
+				O.show_message("[htmlicon] <b>\The [src]</b> says, \"You s-s-saved me... w-why?\"", 2)
 			flick("[initial(icon_state)]_spit", src)
 
 	if(current_tick >= grind_rate)
@@ -194,7 +201,7 @@
 
 	var/message = pickweight(list(
 		"When you study and object from a distance, only its principle may be seen." = 1,									// Children of Dune
-		"Knowledge is an unending adventure at the edge of uncertainty." = 1,												// 
+		"Knowledge is an unending adventure at the edge of uncertainty." = 1,												//
 		"To know a thing well, know its limits; Only when pushed beyond its tolerance will its true nature be seen." = 1,	//
 		"You do not take from this universe. It grants what it will." = 1,							// Dune Messiah
 		"Belief can be manipulated. Only knowledge is dangerous." = 1,								//
@@ -204,8 +211,9 @@
 		"...!" = 31
 		))
 
-	for(var/mob/O as anything in hearers(src, null))
-		O.show_message("\icon[src] <b>\The [src]</b> says, \"[message]\"", 2)
+	var/our_hearers = hearers(get_turf(src))
+	for(var/mob/O as anything in our_hearers)
+		O.show_message("[icon2html(src, our_hearers)] <b>\The [src]</b> says, \"[message]\"", 2)
 
 	for(var/obj/machinery/autolathe/organ_fabricator/OF in get_area_all_atoms(get_area(src)))
 		OF.files.AddDesign2Known(D)
@@ -220,7 +228,7 @@
 	switch(tool_type)
 		if(QUALITY_CLAMPING)
 			if(I.use_tool(user, src, WORKTIME_NORMAL, tool_type, FAILCHANCE_HARD, required_stat = STAT_BIO))
-				to_chat(user, SPAN_NOTICE("You remove the guts of \the [src] with [I]."))
+				to_chat(user, span_notice("You remove the guts of \the [src] with [I]."))
 				dismantle()
 			return TRUE
 
@@ -229,7 +237,7 @@
 			if(I.use_tool(user, src, WORKTIME_NEAR_INSTANT, tool_type, FAILCHANCE_VERY_EASY, required_stat = STAT_BIO, instant_finish_tier = 30, forced_sound = used_sound))
 				updateUsrDialog()
 				panel_open = !panel_open
-				to_chat(user, SPAN_NOTICE("You [panel_open ? "open" : "close"] the maw of \the [src] with [I]."))
+				to_chat(user, span_notice("You [panel_open ? "open" : "close"] the maw of \the [src] with [I]."))
 				update_icon()
 			return TRUE
 
@@ -256,7 +264,8 @@
 	var/throughput_mult = 0
 
 	has_brain = FALSE
-
+	has_heart = FALSE
+	has_blood = FALSE
 	for(var/component in component_parts)
 		if(istype(component, /obj/item/electronics/circuitboard/disgorger))
 			var/obj/item/electronics/circuitboard/disgorger/C = component
@@ -281,8 +290,12 @@
 					muscle_eff += O.organ_efficiency[eff]
 				if(OP_BLOOD_VESSEL)
 					blood_vessel_eff += O.organ_efficiency[eff]
+					if(blood_vessel_eff > 75)
+						has_blood = TRUE
 				if(OP_HEART)
 					heart_eff += O.organ_efficiency[eff]
+					if(heart_eff > 75)
+						has_heart = TRUE
 				if(BP_BRAIN)
 					has_brain = TRUE
 					brain_eff += O.organ_efficiency[eff]
@@ -315,7 +328,7 @@
 			/datum/reagent/stim = 0.5,
 			/datum/reagent/drug/psilocybin = 2
 		))
-	if(kidney_eff > 199)
+	if(kidney_eff > 150)
 		LAZYADD(accepted_reagents, list(
 			/datum/reagent/medicine/suppressital = 1,
 			/datum/reagent/medicine/methylphenidate = 1,
@@ -330,9 +343,8 @@
 		))
 
 	throughput_mult = (heart_eff > 79) ? round((heart_eff + blood_vessel_eff) / 650, 0.05) : 0.05
-
-	capacity_mod = round((stomach_eff / 15) + carrion_chem_eff) 
-	tick_reduction = round((muscle_eff / 20) + carrion_maw_eff) 
+	capacity_mod = round((stomach_eff / 15) + carrion_chem_eff)
+	tick_reduction = round((muscle_eff / 20) + carrion_maw_eff)
 	production_mod = round(throughput_mult * ((stomach_eff / 2) + (liver_eff / 4) + (kidney_eff / 4) + (carrion_maw_eff)) / 100, 0.01)
 	research_mod = round(throughput_mult * (brain_eff / 65), 0.01)
 
@@ -350,6 +362,8 @@
 /obj/machinery/reagentgrinder/industrial/disgorger/nano_ui_data()
 	. = ..()
 
+	.["has_heart"] = has_heart
+	.["has_blood"] = has_blood
 	.["biomatter_counter"] = biomatter_counter
 	.["research_counter"] = research_counter
 	.["research_rate"] = round(100 / research_denominator, 1)
@@ -411,9 +425,9 @@
 
 /obj/item/fleshcube/attack_self(mob/user)
 	squelch()
-	user.visible_message(SPAN_NOTICE("<b>\The [user]</b> squeezes \the [src]. It squelches."), SPAN_NOTICE("You squeeze \the [src]. It squelches."))
+	user.visible_message(span_notice("<b>\The [user]</b> squeezes \the [src]. It squelches."), span_notice("You squeeze \the [src]. It squelches."))
 
 /obj/item/fleshcube/throw_impact(atom/impact_atom)
 	..()
 	squelch()
-	visible_message(SPAN_NOTICE("\The [src] squelches as it impacts with surface."))
+	visible_message(span_notice("\The [src] squelches as it impacts with surface."))

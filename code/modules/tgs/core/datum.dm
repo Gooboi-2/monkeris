@@ -23,8 +23,7 @@ TGS_DEFINE_AND_SET_GLOBAL(tgs, null)
 /datum/tgs_api/latest
 	parent_type = /datum/tgs_api/v5
 
-// need to implement new VV stuff if we want this to work
-// TGS_PROTECT_DATUM(/datum/tgs_api)
+TGS_PROTECT_DATUM(/datum/tgs_api)
 
 /datum/tgs_api/proc/ApiVersion()
 	return TGS_UNIMPLEMENTED
@@ -73,3 +72,6 @@ TGS_DEFINE_AND_SET_GLOBAL(tgs, null)
 
 /datum/tgs_api/proc/TriggerEvent(event_name, list/parameters, wait_for_completion)
 	return FALSE
+
+/datum/tgs_api/proc/TriggerDeployment()
+	return TGS_UNIMPLEMENTED

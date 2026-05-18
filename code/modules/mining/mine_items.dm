@@ -16,22 +16,15 @@
 	new /obj/item/clothing/glasses/powered/meson(src)
 	new /obj/item/clothing/shoes/color/black(src)
 	new /obj/item/storage/belt/utility(src)
-	new /obj/item/cell/large/high(src)
-	new /obj/item/cell/large/high(src)
 	new /obj/item/cell/medium/high(src)
 	new /obj/item/cell/medium/high(src)
 	new /obj/item/cell/small/high(src)
 	new /obj/item/cell/small/high(src)
-	new /obj/item/tool_upgrade/augment/cell_mount(src)
-	new /obj/item/tool_upgrade/productivity/motor(src)
 	new /obj/item/device/scanner/gas(src)
 	new /obj/item/storage/bag/ore(src)
 	new /obj/item/device/lighting/toggleable/flashlight/heavy(src)
 	new /obj/item/tool/shovel(src)
 	new /obj/item/tool/pickaxe(src)
-	new /obj/item/tool/pickaxe/jackhammer(src)
-	new /obj/item/gun/projectile/shotgun/doublebarrel(src)
-	new /obj/item/ammo_magazine/ammobox/shotgun(src)
 	new /obj/item/device/t_scanner(src)
 	new /obj/item/gun/projectile/flare_gun(src)
 	new /obj/item/ammo_casing/flare(src)
@@ -42,8 +35,26 @@
 	name = "lantern"
 	icon_state = "lantern"
 	item_state = "lantern"
+	item_icons = list(
+		slot_l_hand_str = 'icons/mob/inhands/equipment/mining_lefthand.dmi',
+		slot_r_hand_str = 'icons/mob/inhands/equipment/mining_righthand.dmi',
+		)
 	desc = "A mining lantern."
 	brightness_on = 4			// luminosity when on
+
+/obj/item/device/lighting/toggleable/lantern/turn_on(mob/user)
+	.=..()
+	if(.)
+		playsound(loc, 'sound/effects/Custom_flashlight.ogg', 50, 1)
+		START_PROCESSING(SSobj, src)
+		item_state = "[initial(item_state)]_on"
+		update_wear_icon()
+
+/obj/item/device/lighting/toggleable/lantern/turn_off(mob/user)
+	playsound(loc, 'sound/effects/Custom_flashlight.ogg', 50, 1)
+	item_state = initial(item_state)
+	update_wear_icon()
+	..()
 
 
 /*****************************Pickaxe********************************/

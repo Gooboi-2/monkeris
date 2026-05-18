@@ -75,8 +75,7 @@
 	required_tech_levels = list()
 	cost = 400
 
-	unlocks_designs = list(	/datum/design/research/circuit/biogenerator,
-							/datum/design/research/item/weapon/flora_gun)
+	unlocks_designs = list(/datum/design/research/item/weapon/flora_gun)
 
 /datum/technology/portable_chemistry
 	name = "Portable Chemistry"
@@ -284,13 +283,13 @@
 							/datum/design/research/item/mechfab/modules/multitool/surgical,
 							/datum/design/research/item/mechfab/modules/multitool/engineer,
 							/datum/design/research/item/mechfab/modules/multitool/miner,
-							/datum/design/research/item/mechfab/prosthesis_moebius/r_arm,
-							/datum/design/research/item/mechfab/prosthesis_moebius/l_arm,
-							/datum/design/research/item/mechfab/prosthesis_moebius/r_leg,
-							/datum/design/research/item/mechfab/prosthesis_moebius/l_leg,
-							/datum/design/research/item/mechfab/prosthesis_moebius/groin,
-							/datum/design/research/item/mechfab/prosthesis_moebius/torso,
-							/datum/design/research/item/mechfab/prosthesis_moebius/head
+							/datum/design/research/item/mechfab/prosthesis/moebius/r_arm,
+							/datum/design/research/item/mechfab/prosthesis/moebius/l_arm,
+							/datum/design/research/item/mechfab/prosthesis/moebius/r_leg,
+							/datum/design/research/item/mechfab/prosthesis/moebius/l_leg,
+							/datum/design/research/item/mechfab/prosthesis/moebius/groin,
+							/datum/design/research/item/mechfab/prosthesis/moebius/torso,
+							/datum/design/research/item/mechfab/prosthesis/moebius/head
 							)
 
 /datum/technology/mind_biotech
